@@ -272,3 +272,13 @@ func (config EditUserStarSubscriptionConfig) params() (Params, error) {
 	params.AddBool("is_canceled", config.IsCanceled)
 	return params, nil
 }
+
+type GetMyStarBalanceConfig struct{}
+
+func (config GetMyStarBalanceConfig) method() string {
+	return "getMyStarBalance"
+}
+
+func (config GetMyStarBalanceConfig) params() (Params, error) {
+	return Params{}, nil
+}

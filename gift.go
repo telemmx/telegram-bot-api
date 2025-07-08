@@ -49,10 +49,14 @@ type UniqueGiftInfo struct {
 	Gift UniqueGift `json:"gift"`
 	// Origin of the gift. Currently, either “upgrade” or “transfer”
 	Origin string `json:"origin"`
+	//last_resale_star_count	Integer	Optional. For gifts bought from other users, the price paid for the gift
+	LastResaleStarCount int `json:"last_resale_star_count,omitempty"`
 	// Optional. Unique identifier of the received gift for the bot; only present for gifts received on behalf of business accounts
-	OwnedGiftId string `json:"owned_gift_id"`
+	OwnedGiftId string `json:"owned_gift_id,omitempty"`
 	// Optional. Number of Telegram Stars that must be paid to transfer the gift; omitted if the bot cannot transfer the gift
-	TransferStarCount int `json:"transfer_star_count"`
+	TransferStarCount int `json:"transfer_star_count,omitempty"`
+	//next_transfer_date	Integer	Optional. Point in time (Unix timestamp) when the gift can be transferred. If it is in the past, then the gift can be transferred now
+	NextTransferDate int `json:"next_transfer_date,omitempty"`
 }
 
 /*

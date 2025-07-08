@@ -456,102 +456,6 @@ func (c Chat) ChatConfig() ChatConfig {
 	return ChatConfig{ChatID: c.ID}
 }
 
-/**
-Message
-This object represents a message.
-
-Field	Type	Description
-message_id	Integer	Unique message identifier inside this chat. In specific instances (e.g., message containing a video sent to a big chat), the server might automatically schedule a message instead of sending it immediately. In such cases, this field will be 0 and the relevant message will be unusable until it is actually sent
-message_thread_id	Integer	Optional. Unique identifier of a message thread to which the message belongs; for supergroups only
-from	User	Optional. Sender of the message; may be empty for messages sent to channels. For backward compatibility, if the message was sent on behalf of a chat, the field contains a fake sender user in non-channel chats
-sender_chat	Chat	Optional. Sender of the message when sent on behalf of a chat. For example, the supergroup itself for messages sent by its anonymous administrators or a linked channel for messages automatically forwarded to the channel's discussion group. For backward compatibility, if the message was sent on behalf of a chat, the field from contains a fake sender user in non-channel chats.
-sender_boost_count	Integer	Optional. If the sender of the message boosted the chat, the number of boosts added by the user
-sender_business_bot	User	Optional. The bot that actually sent the message on behalf of the business account. Available only for outgoing messages sent on behalf of the connected business account.
-date	Integer	Date the message was sent in Unix time. It is always a positive number, representing a valid date.
-business_connection_id	String	Optional. Unique identifier of the business connection from which the message was received. If non-empty, the message belongs to a chat of the corresponding business account that is independent from any potential bot chat which might share the same identifier.
-chat	Chat	Chat the message belongs to
-forward_origin	MessageOrigin	Optional. Information about the original message for forwarded messages
-is_topic_message	True	Optional. True, if the message is sent to a forum topic
-is_automatic_forward	True	Optional. True, if the message is a channel post that was automatically forwarded to the connected discussion group
-reply_to_message	Message	Optional. For replies in the same chat and message thread, the original message. Note that the Message object in this field will not contain further reply_to_message fields even if it itself is a reply.
-external_reply	ExternalReplyInfo	Optional. Information about the message that is being replied to, which may come from another chat or forum topic
-quote	TextQuote	Optional. For replies that quote part of the original message, the quoted part of the message
-reply_to_story	Story	Optional. For replies to a story, the original story
-via_bot	User	Optional. Bot through which the message was sent
-edit_date	Integer	Optional. Date the message was last edited in Unix time
-has_protected_content	True	Optional. True, if the message can't be forwarded
-is_from_offline	True	Optional. True, if the message was sent by an implicit action, for example, as an away or a greeting business message, or as a scheduled message
-media_group_id	String	Optional. The unique identifier of a media message group this message belongs to
-author_signature	String	Optional. Signature of the post author for messages in channels, or the custom title of an anonymous group administrator
-paid_star_count	Integer	Optional. The number of Telegram Stars that were paid by the sender of the message to send it
-text	String	Optional. For text messages, the actual UTF-8 text of the message
-entities	Array of MessageEntity	Optional. For text messages, special entities like usernames, URLs, bot commands, etc. that appear in the text
-link_preview_options	LinkPreviewOptions	Optional. Options used for link preview generation for the message, if it is a text message and link preview options were changed
-effect_id	String	Optional. Unique identifier of the message effect added to the message
-animation	Animation	Optional. Message is an animation, information about the animation. For backward compatibility, when this field is set, the document field will also be set
-audio	Audio	Optional. Message is an audio file, information about the file
-document	Document	Optional. Message is a general file, information about the file
-paid_media	PaidMediaInfo	Optional. Message contains paid media; information about the paid media
-photo	Array of PhotoSize	Optional. Message is a photo, available sizes of the photo
-sticker	Sticker	Optional. Message is a sticker, information about the sticker
-story	Story	Optional. Message is a forwarded story
-video	Video	Optional. Message is a video, information about the video
-video_note	VideoNote	Optional. Message is a video note, information about the video message
-voice	Voice	Optional. Message is a voice message, information about the file
-caption	String	Optional. Caption for the animation, audio, document, paid media, photo, video or voice
-caption_entities	Array of MessageEntity	Optional. For messages with a caption, special entities like usernames, URLs, bot commands, etc. that appear in the caption
-show_caption_above_media	True	Optional. True, if the caption must be shown above the message media
-has_media_spoiler	True	Optional. True, if the message media is covered by a spoiler animation
-contact	Contact	Optional. Message is a shared contact, information about the contact
-dice	Dice	Optional. Message is a dice with random value
-game	Game	Optional. Message is a game, information about the game. More about games »
-poll	Poll	Optional. Message is a native poll, information about the poll
-venue	Venue	Optional. Message is a venue, information about the venue. For backward compatibility, when this field is set, the location field will also be set
-location	Location	Optional. Message is a shared location, information about the location
-new_chat_members	Array of User	Optional. New members that were added to the group or supergroup and information about them (the bot itself may be one of these members)
-left_chat_member	User	Optional. A member was removed from the group, information about them (this member may be the bot itself)
-new_chat_title	String	Optional. A chat title was changed to this value
-new_chat_photo	Array of PhotoSize	Optional. A chat photo was change to this value
-delete_chat_photo	True	Optional. Service message: the chat photo was deleted
-group_chat_created	True	Optional. Service message: the group has been created
-supergroup_chat_created	True	Optional. Service message: the supergroup has been created. This field can't be received in a message coming through updates, because bot can't be a member of a supergroup when it is created. It can only be found in reply_to_message if someone replies to a very first message in a directly created supergroup.
-channel_chat_created	True	Optional. Service message: the channel has been created. This field can't be received in a message coming through updates, because bot can't be a member of a channel when it is created. It can only be found in reply_to_message if someone replies to a very first message in a channel.
-message_auto_delete_timer_changed	MessageAutoDeleteTimerChanged	Optional. Service message: auto-delete timer settings changed in the chat
-migrate_to_chat_id	Integer	Optional. The group has been migrated to a supergroup with the specified identifier. This number may have more than 32 significant bits and some programming languages may have difficulty/silent defects in interpreting it. But it has at most 52 significant bits, so a signed 64-bit integer or double-precision float type are safe for storing this identifier.
-migrate_from_chat_id	Integer	Optional. The supergroup has been migrated from a group with the specified identifier. This number may have more than 32 significant bits and some programming languages may have difficulty/silent defects in interpreting it. But it has at most 52 significant bits, so a signed 64-bit integer or double-precision float type are safe for storing this identifier.
-pinned_message	MaybeInaccessibleMessage	Optional. Specified message was pinned. Note that the Message object in this field will not contain further reply_to_message fields even if it itself is a reply.
-invoice	Invoice	Optional. Message is an invoice for a payment, information about the invoice. More about payments »
-successful_payment	SuccessfulPayment	Optional. Message is a service message about a successful payment, information about the payment. More about payments »
-refunded_payment	RefundedPayment	Optional. Message is a service message about a refunded payment, information about the payment. More about payments »
-users_shared	UsersShared	Optional. Service message: users were shared with the bot
-chat_shared	ChatShared	Optional. Service message: a chat was shared with the bot
-gift	GiftInfo	Optional. Service message: a regular gift was sent or received
-unique_gift	UniqueGiftInfo	Optional. Service message: a unique gift was sent or received
-connected_website	String	Optional. The domain name of the website on which the user has logged in. More about Telegram Login »
-write_access_allowed	WriteAccessAllowed	Optional. Service message: the user allowed the bot to write messages after adding it to the attachment or side menu, launching a Web App from a link, or accepting an explicit request from a Web App sent by the method requestWriteAccess
-passport_data	PassportData	Optional. Telegram Passport data
-proximity_alert_triggered	ProximityAlertTriggered	Optional. Service message. A user in the chat triggered another user's proximity alert while sharing Live Location.
-boost_added	ChatBoostAdded	Optional. Service message: user boosted the chat
-chat_background_set	ChatBackground	Optional. Service message: chat background set
-forum_topic_created	ForumTopicCreated	Optional. Service message: forum topic created
-forum_topic_edited	ForumTopicEdited	Optional. Service message: forum topic edited
-forum_topic_closed	ForumTopicClosed	Optional. Service message: forum topic closed
-forum_topic_reopened	ForumTopicReopened	Optional. Service message: forum topic reopened
-general_forum_topic_hidden	GeneralForumTopicHidden	Optional. Service message: the 'General' forum topic hidden
-general_forum_topic_unhidden	GeneralForumTopicUnhidden	Optional. Service message: the 'General' forum topic unhidden
-giveaway_created	GiveawayCreated	Optional. Service message: a scheduled giveaway was created
-giveaway	Giveaway	Optional. The message is a scheduled giveaway message
-giveaway_winners	GiveawayWinners	Optional. A giveaway with public winners was completed
-giveaway_completed	GiveawayCompleted	Optional. Service message: a giveaway without public winners was completed
-paid_message_price_changed	PaidMessagePriceChanged	Optional. Service message: the price for paid messages has changed in the chat
-video_chat_scheduled	VideoChatScheduled	Optional. Service message: video chat scheduled
-video_chat_started	VideoChatStarted	Optional. Service message: video chat started
-video_chat_ended	VideoChatEnded	Optional. Service message: video chat ended
-video_chat_participants_invited	VideoChatParticipantsInvited	Optional. Service message: new participants invited to a video chat
-web_app_data	WebAppData	Optional. Service message: data sent by a Web App
-reply_markup	InlineKeyboardMarkup	Optional. Inline keyboard attached to the message. login_url buttons are represented as ordinary url buttons.
-*/
-
 // Message represents a message.
 type Message struct {
 	// MessageID is a unique message identifier inside this chat
@@ -595,6 +499,11 @@ type Message struct {
 	//
 	// optional
 	IsAutomaticForward bool `json:"is_automatic_forward,omitempty"`
+
+	// Optional. Information about the message that is being replied to, which may come from another chat or forum topic
+	// optional
+	ExternalReplyInfo *ExternalReplyInfo `json:"external_reply,omitempty"`
+
 	// ReplyToMessage for replies, the original message.
 	// Note that the Message object in this field will not contain further ReplyToMessage fields
 	// even if it itself is a reply;
@@ -602,11 +511,7 @@ type Message struct {
 	// optional
 	ReplyToMessage *Message `json:"reply_to_message,omitempty"`
 	// Information about the message that is being replied to, which may come from another chat or forum topic
-	//
-	// optional
-	ExternalReply *ExternalReplyInfo `json:"external_reply,omitempty"`
-	// For replies that quote part of the original message, the quoted part of the message
-	//
+
 	// optional
 	Quote *TextQuote `json:"quote,omitempty"`
 	// For replies to a story, the original story
@@ -707,11 +612,16 @@ type Message struct {
 	// True, if the caption must be shown above the message media
 	//
 	// optional
-	ShowCaptionAboveMedia bool `json:"show_caption_above_media"`
-	// True, if the message media is covered by a spoiler animation
-	//
+	ShowCaptionAboveMedia bool `json:"show_caption_above_media,omitempty"`
+
 	// optional
-	HasMediaSpoiler bool `json:"has_media_spoiler"`
+	//Optional. True, if the message media is covered by a spoiler animation
+	HasMediaSpoiler bool `json:"has_media_spoiler,omitempty"`
+
+	// Optional. Message is a checklist
+	// optional
+	Checklist *Checklist `json:"checklist,omitempty"`
+
 	// Contact message is a shared contact, information about the contact;
 	//
 	// optional
@@ -854,6 +764,16 @@ type Message struct {
 	//
 	// optional
 	ChatBackgroundSet *ChatBackground `json:"chat_background_set,omitempty"`
+
+	// Optional. Service message: some tasks in a checklist were marked as done or not done
+	ChecklistTasksDone *ChecklistTasksDone `json:"checklist_tasks_done,omitempty"`
+
+	// Optional. Service message: tasks were added to a checklist
+	ChecklistTasksAdded *ChecklistTasksAdded `json:"checklist_tasks_added,omitempty"`
+
+	//Optional. Service message: the price for paid messages in the corresponding direct messages chat of a channel has changed
+	DirectMessagePriceChanged *DirectMessagePriceChanged `json:"direct_message_price_changed,omitempty"`
+
 	// Service message: forum topic created
 	//
 	// optional
@@ -2199,6 +2119,20 @@ type BotCommand struct {
 	Description string `json:"description"`
 }
 
+/*
+StarAmount
+Describes an amount of Telegram Stars.
+
+Field	Type	Description
+amount	Integer	Integer amount of Telegram Stars, rounded to 0; can be negative
+nanostar_amount	Integer	Optional. The number of 1/1000000000 shares of Telegram Stars; from -999999999 to 999999999; can be negative if and only if amount is non-positive
+*/
+
+type StarAmount struct {
+	Amount         int `json:"amount"`
+	NanostarAmount int `json:"nanostar_amount,omitempty"`
+}
+
 // BotCommandScope represents the scope to which bot commands are applied.
 //
 // It contains the fields for all types of scopes, different types only support
@@ -2956,10 +2890,14 @@ type ExternalReplyInfo struct {
 	// True, if the message media is covered by a spoiler animation
 	//
 	// optional
-	HasMediaSpoiler bool `json:"has_media_spoiler"
-	// Message is a shared contact, information about the contact
-	// 
-	// optional`
+	HasMediaSpoiler bool `json:"has_media_spoiler,omitempty"`
+
+	// Message is a checklist
+	//
+	// optional
+	Checklist *Checklist `json:"checklist"`
+
+	// optional
 	Contact *Contact `json:"contact"`
 	// Message is a dice with random value
 	//
@@ -3449,4 +3387,17 @@ type ReplyParameters struct {
 	QuoteParseMode           string          `json:"quote_parse_mode"`
 	QuoteEntities            []MessageEntity `json:"quote_entities"`
 	QuotePosition            int             `json:"quote_position"`
+}
+
+/*
+DirectMessagePriceChanged
+Describes a service message about a change in the price of direct messages sent to a channel chat.
+
+Field	Type	Description
+are_direct_messages_enabled	Boolean	True, if direct messages are enabled for the channel chat; false otherwise
+direct_message_star_count	Integer	Optional. The new number of Telegram Stars that must be paid by users for each direct message sent to the channel. Does not apply to users who have been exempted by administrators. Defaults to 0.
+*/
+type DirectMessagePriceChanged struct {
+	AreDirectMessagesEnabled bool `json:"are_direct_messages_enabled"`
+	DirectMessageStarCount   int  `json:"direct_message_star_count"`
 }

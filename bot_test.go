@@ -1,6 +1,8 @@
 package tgbotapi
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -10,6 +12,8 @@ import (
 
 const (
 	TestToken               = "7888546561:AAFbGm18gvT-6Abv_67JcssqfaFfRzOD5s"
+	TestToken               = "7888546561:AAFbGm18gvT-6Abv_67JcssqfaFfRzOD5_s"
+	PremiumChatId           = 7488936897 // tg_owls
 	ChatID                  = 8167994071
 	Channel                 = "@thisisbiggroup"
 	SupergroupChatID        = -1002809091954
@@ -48,6 +52,12 @@ func getBot(t *testing.T) (*BotAPI, error) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	me, err := bot.GetMe()
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println("bot -> " + me.UserName)
 
 	return bot, err
 }
@@ -1079,4 +1089,43 @@ func TestPrepareInputMediaForParams(t *testing.T) {
 	if prepared[1].(InputMediaVideo).Media != FileID("test") {
 		t.Error("Passthrough value was not the same")
 	}
+}
+
+func TestStartBot(t *testing.T) {
+	bot, _ := getBot(t)
+	u := NewUpdate(0)
+	u.Timeout = 60
+	updates := bot.GetUpdatesChan(u)
+	for update := range updates {
+		byts, _ := json.Marshal(update)
+		fmt.Printf("GERMSG %s\n", string(byts))
+	}
+}
+
+func TestSendCheckList(t *testing.T) {
+	bot, _ := getBot(t)
+	checklist := SendChecklistConfig{
+		BaseChat: BaseChat{
+			BusinessConnectionID: "mTnRuzXdaVNOAwAAzyFb2hqoH_s",
+			ChatID:               PremiumChatId,
+		},
+		Checklist: Checklist{
+			Title: "Test",
+			Tasks: []ChecklistTask{
+				{
+					Id:   1,
+					Text: "Test option1",
+				},
+				{
+					Id:   2,
+					Text: "Test option2",
+				},
+			},
+		},
+	}
+	msg, err := bot.Send(checklist)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(msg.MessageID)
 }
