@@ -1,4 +1,4 @@
-module github.com/telemmx/telegram-bot-api/v9.1
+module github.com/telemmx/telegram-bot-api/v9
 
 go 1.23.0
 
