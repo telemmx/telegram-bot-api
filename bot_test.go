@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	TestToken               = "7888546561:AAFbGm18gvT-6Abv_67JcssqfaFfRzOD5s"
 	TestToken               = "7888546561:AAFbGm18gvT-6Abv_67JcssqfaFfRzOD5_s"
 	PremiumChatId           = 7488936897 // tg_owls
 	ChatID                  = 8167994071
