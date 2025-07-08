@@ -42,6 +42,11 @@ func (config SendGameConfig) params() (Params, error) {
 	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
 	params.AddInterface("reply_parameters", config.ReplyParameters)
 	params.AddInterface("reply_markup", config.ReplyMarkup)
+
+	err := params.CheckArgs("chat_id", "game_short_name")
+	if err != nil {
+		return nil, err
+	}
 	return params, nil
 }
 
@@ -71,6 +76,10 @@ func (config SetGameScoreConfig) params() (Params, error) {
 		params.AddNonZero("message_id", config.MessageID)
 	}
 
+	err := params.CheckArgs("user_id", "score")
+	if err != nil {
+		return nil, err
+	}
 	return params, nil
 }
 
@@ -89,16 +98,16 @@ type GetGameHighScoresConfig struct {
 
 func (config GetGameHighScoresConfig) params() (Params, error) {
 	params := make(Params)
-
 	params.AddNonZero64("user_id", config.UserID)
+	params.AddNonEmpty("inline_message_id", config.InlineMessageID)
 
-	if config.InlineMessageID != "" {
-		params["inline_message_id"] = config.InlineMessageID
-	} else {
-		params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
-		params.AddNonZero("message_id", config.MessageID)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero("message_id", config.MessageID)
+
+	err := params.CheckArgs("user_id")
+	if err != nil {
+		return nil, err
 	}
-
 	return params, nil
 }
 

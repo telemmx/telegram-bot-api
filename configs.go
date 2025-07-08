@@ -293,7 +293,8 @@ func (chat *BaseChat) params() (Params, error) {
 // BaseFile is a base type for all file config types.
 type BaseFile struct {
 	BaseChat
-	File RequestFileData
+	File  RequestFileData
+	Thumb RequestFileData
 }
 
 func (file BaseFile) params() (Params, error) {
@@ -478,7 +479,6 @@ func (config CopyMessagesConfig) method() string {
 // PhotoConfig contains information about a SendPhoto request.
 type PhotoConfig struct {
 	BaseFile
-	Thumb                 RequestFileData
 	Caption               string
 	ParseMode             string
 	CaptionEntities       []MessageEntity
@@ -496,12 +496,16 @@ func (config PhotoConfig) params() (Params, error) {
 	}
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
-	err = params.AddInterface("caption_entities", config.CaptionEntities)
+	params.AddInterface("caption_entities", config.CaptionEntities)
 	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
 	params.AddBool("show_caption_above_media", config.ShowCaptionAboveMedia)
 	params.AddBool("has_spoiler", config.HasSpoiler)
 	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
 	params.AddInterface("reply_parameters", config.ReplyParameters)
+	err = params.CheckArgs("chat_id", "photo")
+	if err != nil {
+		return nil, err
+	}
 	return params, err
 }
 
@@ -528,7 +532,6 @@ func (config PhotoConfig) files() []RequestFile {
 // AudioConfig contains information about a SendAudio request.
 type AudioConfig struct {
 	BaseFile
-	Thumb              RequestFileData
 	Caption            string
 	ParseMode          string
 	CaptionEntities    []MessageEntity
@@ -554,9 +557,9 @@ func (config AudioConfig) params() (Params, error) {
 	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
 	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
 	params.AddInterface("reply_parameters", config.ReplyParameters)
-	err = params.AddInterface("caption_entities", config.CaptionEntities)
+	params.AddInterface("caption_entities", config.CaptionEntities)
 
-	return params, err
+	return params, nil
 }
 
 func (config AudioConfig) method() string {
@@ -571,18 +574,16 @@ func (config AudioConfig) files() []RequestFile {
 
 	if config.Thumb != nil {
 		files = append(files, RequestFile{
-			Name: "thumb",
+			Name: "thumbnail",
 			Data: config.Thumb,
 		})
 	}
-
 	return files
 }
 
 // DocumentConfig contains information about a SendDocument request.
 type DocumentConfig struct {
 	BaseFile
-	Thumb                       RequestFileData
 	Caption                     string
 	ParseMode                   string
 	CaptionEntities             []MessageEntity
@@ -617,7 +618,7 @@ func (config DocumentConfig) files() []RequestFile {
 
 	if config.Thumb != nil {
 		files = append(files, RequestFile{
-			Name: "thumb",
+			Name: "thumbnail",
 			Data: config.Thumb,
 		})
 	}
@@ -628,10 +629,22 @@ func (config DocumentConfig) files() []RequestFile {
 // StickerConfig contains information about a SendSticker request.
 type StickerConfig struct {
 	BaseFile
+	Emoji              string           `json:"emoji,omitempty"`
+	AllowPaidBroadcast bool             `json:"allow_paid_broadcast,omitempty"`
+	ReplyParameters    *ReplyParameters `json:"reply_parameters,omitempty"`
+	MessageEffectID    string           `json:"message_effect_id,omitempty"`
 }
 
 func (config StickerConfig) params() (Params, error) {
-	return config.BaseChat.params()
+	p, err := config.BaseChat.params()
+	if err != nil {
+		return p, err
+	}
+	p.AddNonEmpty("emoji", config.Emoji)
+	p.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	p.AddInterface("reply_parameters", config.ReplyParameters)
+	p.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	return p, nil
 }
 
 func (config StickerConfig) method() string {
@@ -648,11 +661,9 @@ func (config StickerConfig) files() []RequestFile {
 // VideoConfig contains information about a SendVideo request.
 type VideoConfig struct {
 	BaseFile
-
 	Duration              int
 	Width                 int
 	Height                int
-	Thumbnail             RequestFileData
 	Cover                 RequestFileData
 	StartTimeStamp        int
 	Caption               string
@@ -698,10 +709,10 @@ func (config VideoConfig) files() []RequestFile {
 		Name: "video",
 		Data: config.File,
 	}}
-	if config.Thumbnail != nil {
+	if config.Thumb != nil {
 		files = append(files, RequestFile{
 			Name: "thumbnail",
-			Data: config.Thumbnail,
+			Data: config.Thumb,
 		})
 	}
 	if config.Cover != nil {
@@ -717,7 +728,6 @@ func (config VideoConfig) files() []RequestFile {
 type AnimationConfig struct {
 	BaseFile
 	Duration              int
-	Thumb                 RequestFileData
 	Caption               string
 	ParseMode             string
 	CaptionEntities       []MessageEntity
@@ -774,7 +784,6 @@ func (config AnimationConfig) files() []RequestFile {
 // VideoNoteConfig contains information about a SendVideoNote request.
 type VideoNoteConfig struct {
 	BaseFile
-	Thumb    RequestFileData
 	Duration int
 	Length   int
 
@@ -807,7 +816,7 @@ func (config VideoNoteConfig) files() []RequestFile {
 
 	if config.Thumb != nil {
 		files = append(files, RequestFile{
-			Name: "thumb",
+			Name: "thumbnail",
 			Data: config.Thumb,
 		})
 	}
@@ -855,7 +864,6 @@ func (config PaidMediaConfig) files() []RequestFile {
 // VoiceConfig contains information about a SendVoice request.
 type VoiceConfig struct {
 	BaseFile
-	Thumb              RequestFileData
 	Caption            string
 	ParseMode          string
 	CaptionEntities    []MessageEntity
@@ -891,14 +899,6 @@ func (config VoiceConfig) files() []RequestFile {
 		Name: "voice",
 		Data: config.File,
 	}}
-
-	if config.Thumb != nil {
-		files = append(files, RequestFile{
-			Name: "thumb",
-			Data: config.Thumb,
-		})
-	}
-
 	return files
 }
 
@@ -1303,15 +1303,20 @@ func (SendPollConfig) method() string {
 // ChatActionConfig contains information about a SendChatAction request.
 type ChatActionConfig struct {
 	BaseChat
-	Action string // required
+	Action string `json:"action"`
 }
 
 func (config ChatActionConfig) params() (Params, error) {
 	params, err := config.BaseChat.params()
-
-	params["action"] = config.Action
-
-	return params, err
+	if err != nil {
+		return nil, err
+	}
+	params.AddNonEmpty("action", config.Action)
+	err = params.CheckArgs("chat_id", "action")
+	if err != nil {
+		return nil, err
+	}
+	return params, nil
 }
 
 func (config ChatActionConfig) method() string {

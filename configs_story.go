@@ -146,6 +146,11 @@ func (config PostStoryConfig) params() (Params, error) {
 	params.AddInterface("areas", config.Areas)
 	params.AddBool("post_to_chat_page", config.PostToChatPage)
 	params.AddBool("protect_content", config.ProtectContent)
+
+	err := params.CheckArgs("business_connection_id", "content", "active_period")
+	if err != nil {
+		return nil, err
+	}
 	return params, nil
 }
 
@@ -176,6 +181,11 @@ func (config EditStoryConfig) params() (Params, error) {
 	params.AddInterface("areas", config.Areas)
 	params.AddBool("post_to_chat_page", config.PostToChatPage)
 	params.AddBool("protect_content", config.ProtectContent)
+
+	err := params.CheckArgs("business_connection_id", "story_id", "content")
+	if err != nil {
+		return nil, err
+	}
 	return params, nil
 }
 
@@ -192,5 +202,9 @@ func (config DeleteStoryConfig) params() (Params, error) {
 	params := Params{}
 	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
 	params.AddNonZero("story_id", config.StoryID)
+	err := params.CheckArgs("business_connection_id", "story_id")
+	if err != nil {
+		return nil, err
+	}
 	return params, nil
 }

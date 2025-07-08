@@ -30,6 +30,11 @@ func (config SendChecklistConfig) params() (Params, error) {
 	params.AddInterface("checklist", config.Checklist)
 	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
 	params.AddInterface("reply_parameters", config.ReplyParameters)
+
+	err = params.CheckArgs("business_connection_id", "chat_id", "checklist")
+	if err != nil {
+		return nil, err
+	}
 	return params, nil
 }
 
@@ -49,8 +54,12 @@ func (config EditMessageChecklistConfig) params() (Params, error) {
 		return nil, err
 	}
 	params.AddNonZero64("message_id", config.MessageID)
-	err = params.AddInterface("checklist", config.Checklist)
-	return params, err
+	params.AddInterface("checklist", config.Checklist)
+	err = params.CheckArgs("business_connection_id", "chat_id", "message_id", "checklist")
+	if err != nil {
+		return nil, err
+	}
+	return params, nil
 }
 
 func (config EditMessageChecklistConfig) method() string {

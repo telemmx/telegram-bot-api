@@ -315,7 +315,6 @@ func (bot *BotAPI) Request(c Chattable) (*APIResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if t, ok := c.(Fileable); ok {
 		files := t.files()
 

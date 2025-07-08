@@ -461,7 +461,7 @@ type Message struct {
 	// MessageID is a unique message identifier inside this chat
 	MessageID int `json:"message_id"`
 	// Unique identifier of a message thread to which the message belongs; for supergroups only
-	MessageThreadID int `json:"message_thread_id"`
+	MessageThreadID int `json:"message_thread_id,omitempty"`
 	// From is a sender, empty for messages sent to channels;
 	//
 	// optional
@@ -476,7 +476,7 @@ type Message struct {
 	// if the sender of the message boosted the chat, the number of boosts added by the user
 	//
 	// optional
-	SenderBoostCount int `json:"sender_boost_count"`
+	SenderBoostCount int `json:"sender_boost_count,omitempty"`
 	// Date of the message was sent in Unix time
 	Date int `json:"date"`
 	// Unique identifier of the business connection from which the message was received.
@@ -484,9 +484,9 @@ type Message struct {
 	// independent from any potential bot chat which might share the same identifier.
 	//
 	// optional
-	BusinessConnectionId string `json:"business_connection_id"`
+	BusinessConnectionId string `json:"business_connection_id,omitempty"`
 	// Chat is the conversation the message belongs to
-	Chat *Chat `json:"chat"`
+	Chat *Chat `json:"chat,omitempty"`
 	// Information about the original message for forwarded messages
 	//
 	// optional
@@ -746,7 +746,7 @@ type Message struct {
 	// launching a Web App from a link, or accepting an explicit request from a Web App sent by the method
 	//
 	// optional
-	WriteAccessAllowed *WriteAccessAllowed `json:"write_access_allowed"`
+	WriteAccessAllowed *WriteAccessAllowed `json:"write_access_allowed,omitempty"`
 	// PassportData is a Telegram Passport data;
 	//
 	// optional
@@ -1144,9 +1144,11 @@ type Document struct {
 	// be the same over time and for different bots. Can't be used to download
 	// or reuse the file.
 	FileUniqueID string `json:"file_unique_id"`
-	// Thumbnail document thumbnail as defined by sender
+	// Thumb document thumbnail as defined by sender
 	//
 	// optional
+	Thumb *PhotoSize `json:"thumb,omitempty"`
+
 	Thumbnail *PhotoSize `json:"thumbnail,omitempty"`
 	// FileName original filename as defined by sender
 	//

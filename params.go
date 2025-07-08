@@ -2,6 +2,7 @@ package tgbotapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 )
@@ -93,5 +94,15 @@ func (p Params) AddFirstValid(key string, args ...interface{}) error {
 		}
 	}
 
+	return nil
+}
+
+func (p Params) CheckArgs(args ...string) error {
+	for _, arg := range args {
+		val := p[arg]
+		if val == "" {
+			return fmt.Errorf("arg %s is required", arg)
+		}
+	}
 	return nil
 }
