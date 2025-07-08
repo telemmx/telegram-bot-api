@@ -339,11 +339,10 @@ func NewWebhookWithCert(link string, file RequestFileData) (WebhookConfig, error
 // NewInlineQueryResultArticle creates a new inline query article.
 func NewInlineQueryResultArticle(id, title, messageText string) InlineQueryResultArticle {
 	return InlineQueryResultArticle{
-		Type:  "article",
-		ID:    id,
-		Title: title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "article", ID: id},
+		Title:                 title,
 		InputMessageContent: InputTextMessageContent{
-			Text: messageText,
+			MessageText: messageText,
 		},
 	}
 }
@@ -351,12 +350,11 @@ func NewInlineQueryResultArticle(id, title, messageText string) InlineQueryResul
 // NewInlineQueryResultArticleMarkdown creates a new inline query article with Markdown parsing.
 func NewInlineQueryResultArticleMarkdown(id, title, messageText string) InlineQueryResultArticle {
 	return InlineQueryResultArticle{
-		Type:  "article",
-		ID:    id,
-		Title: title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "article", ID: id},
+		Title:                 title,
 		InputMessageContent: InputTextMessageContent{
-			Text:      messageText,
-			ParseMode: "Markdown",
+			MessageText: messageText,
+			ParseMode:   "Markdown",
 		},
 	}
 }
@@ -364,12 +362,11 @@ func NewInlineQueryResultArticleMarkdown(id, title, messageText string) InlineQu
 // NewInlineQueryResultArticleMarkdownV2 creates a new inline query article with MarkdownV2 parsing.
 func NewInlineQueryResultArticleMarkdownV2(id, title, messageText string) InlineQueryResultArticle {
 	return InlineQueryResultArticle{
-		Type:  "article",
-		ID:    id,
-		Title: title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "article", ID: id},
+		Title:                 title,
 		InputMessageContent: InputTextMessageContent{
-			Text:      messageText,
-			ParseMode: "MarkdownV2",
+			MessageText: messageText,
+			ParseMode:   "MarkdownV2",
 		},
 	}
 }
@@ -377,189 +374,180 @@ func NewInlineQueryResultArticleMarkdownV2(id, title, messageText string) Inline
 // NewInlineQueryResultArticleHTML creates a new inline query article with HTML parsing.
 func NewInlineQueryResultArticleHTML(id, title, messageText string) InlineQueryResultArticle {
 	return InlineQueryResultArticle{
-		Type:  "article",
-		ID:    id,
-		Title: title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "article", ID: id},
+		Title:                 title,
 		InputMessageContent: InputTextMessageContent{
-			Text:      messageText,
-			ParseMode: "HTML",
+			MessageText: messageText,
+			ParseMode:   "HTML",
 		},
 	}
 }
 
 // NewInlineQueryResultGIF creates a new inline query GIF.
-func NewInlineQueryResultGIF(id, url string) InlineQueryResultGIF {
-	return InlineQueryResultGIF{
-		Type: "gif",
-		ID:   id,
-		URL:  url,
+func NewInlineQueryResultGIF(id, url string) InlineQueryResultGif {
+	return InlineQueryResultGif{
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "gif", ID: id},
+		GifURL:                url,
 	}
 }
 
 // NewInlineQueryResultCachedGIF create a new inline query with cached photo.
-func NewInlineQueryResultCachedGIF(id, gifID string) InlineQueryResultCachedGIF {
-	return InlineQueryResultCachedGIF{
-		Type:  "gif",
-		ID:    id,
-		GIFID: gifID,
+func NewInlineQueryResultCachedGIF(id, gifID string) InlineQueryResultCachedGif {
+	return InlineQueryResultCachedGif{
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "gif", ID: id},
+		GifFileID:             gifID,
 	}
 }
 
 // NewInlineQueryResultMPEG4GIF creates a new inline query MPEG4 GIF.
-func NewInlineQueryResultMPEG4GIF(id, url string) InlineQueryResultMPEG4GIF {
-	return InlineQueryResultMPEG4GIF{
-		Type: "mpeg4_gif",
-		ID:   id,
-		URL:  url,
+func NewInlineQueryResultMPEG4GIF(id, url string) InlineQueryResultMpeg4Gif {
+	return InlineQueryResultMpeg4Gif{
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "mpeg4_gif", ID: id},
+		Mpeg4URL:              url,
 	}
 }
 
 // NewInlineQueryResultCachedMPEG4GIF create a new inline query with cached MPEG4 GIF.
-func NewInlineQueryResultCachedMPEG4GIF(id, MPEG4GIFID string) InlineQueryResultCachedMPEG4GIF {
-	return InlineQueryResultCachedMPEG4GIF{
-		Type:        "mpeg4_gif",
-		ID:          id,
-		MPEG4FileID: MPEG4GIFID,
+func NewInlineQueryResultCachedMPEG4GIF(id, MPEG4GIFID string) InlineQueryResultCachedMpeg4Gif {
+	return InlineQueryResultCachedMpeg4Gif{
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "mpeg4_gif", ID: id},
+		Mpeg4FileID:           MPEG4GIFID,
 	}
 }
 
 // NewInlineQueryResultPhoto creates a new inline query photo.
 func NewInlineQueryResultPhoto(id, url string) InlineQueryResultPhoto {
 	return InlineQueryResultPhoto{
-		Type: "photo",
-		ID:   id,
-		URL:  url,
+		BaseInlineQueryResult: BaseInlineQueryResult{
+			Type: "photo",
+			ID:   id,
+		},
+		PhotoURL: url,
 	}
 }
 
 // NewInlineQueryResultPhotoWithThumb creates a new inline query photo.
 func NewInlineQueryResultPhotoWithThumb(id, url, thumb string) InlineQueryResultPhoto {
 	return InlineQueryResultPhoto{
-		Type:     "photo",
-		ID:       id,
-		URL:      url,
-		ThumbURL: thumb,
+		BaseInlineQueryResult: BaseInlineQueryResult{
+			Type: "photo",
+			ID:   id,
+		},
+		PhotoURL:     url,
+		ThumbnailURL: thumb,
 	}
 }
 
 // NewInlineQueryResultCachedPhoto create a new inline query with cached photo.
 func NewInlineQueryResultCachedPhoto(id, photoID string) InlineQueryResultCachedPhoto {
 	return InlineQueryResultCachedPhoto{
-		Type:    "photo",
-		ID:      id,
-		PhotoID: photoID,
+		BaseInlineQueryResult: BaseInlineQueryResult{
+			Type: "photo",
+			ID:   id},
+		PhotoFileID: photoID,
 	}
 }
 
 // NewInlineQueryResultVideo creates a new inline query video.
 func NewInlineQueryResultVideo(id, url string) InlineQueryResultVideo {
 	return InlineQueryResultVideo{
-		Type: "video",
-		ID:   id,
-		URL:  url,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "video",
+			ID: id},
+		ThumbnailURL: url,
 	}
 }
 
 // NewInlineQueryResultCachedVideo create a new inline query with cached video.
 func NewInlineQueryResultCachedVideo(id, videoID, title string) InlineQueryResultCachedVideo {
 	return InlineQueryResultCachedVideo{
-		Type:    "video",
-		ID:      id,
-		VideoID: videoID,
-		Title:   title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "video",
+			ID: id},
+		VideoFileID: videoID,
+		Title:       title,
 	}
 }
 
 // NewInlineQueryResultCachedSticker create a new inline query with cached sticker.
 func NewInlineQueryResultCachedSticker(id, stickerID, title string) InlineQueryResultCachedSticker {
 	return InlineQueryResultCachedSticker{
-		Type:      "sticker",
-		ID:        id,
-		StickerID: stickerID,
-		Title:     title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "sticker", ID: id},
+		StickerFileID:         stickerID,
+		InputMessageContent:   InputTextMessageContent{MessageText: title},
 	}
 }
 
 // NewInlineQueryResultAudio creates a new inline query audio.
 func NewInlineQueryResultAudio(id, url, title string) InlineQueryResultAudio {
 	return InlineQueryResultAudio{
-		Type:  "audio",
-		ID:    id,
-		URL:   url,
-		Title: title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "audio", ID: id},
+		AudioURL:              url,
+		Title:                 title,
 	}
 }
 
 // NewInlineQueryResultCachedAudio create a new inline query with cached photo.
 func NewInlineQueryResultCachedAudio(id, audioID string) InlineQueryResultCachedAudio {
 	return InlineQueryResultCachedAudio{
-		Type:    "audio",
-		ID:      id,
-		AudioID: audioID,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "audio", ID: id},
+		AudioFileID:           audioID,
 	}
 }
 
 // NewInlineQueryResultVoice creates a new inline query voice.
 func NewInlineQueryResultVoice(id, url, title string) InlineQueryResultVoice {
 	return InlineQueryResultVoice{
-		Type:  "voice",
-		ID:    id,
-		URL:   url,
-		Title: title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "voice", ID: id},
+		VoiceURL:              url,
+		Title:                 title,
 	}
 }
 
 // NewInlineQueryResultCachedVoice create a new inline query with cached photo.
 func NewInlineQueryResultCachedVoice(id, voiceID, title string) InlineQueryResultCachedVoice {
 	return InlineQueryResultCachedVoice{
-		Type:    "voice",
-		ID:      id,
-		VoiceID: voiceID,
-		Title:   title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "voice", ID: id},
+		VoiceFileID:           voiceID,
+		Title:                 title,
 	}
 }
 
 // NewInlineQueryResultDocument creates a new inline query document.
 func NewInlineQueryResultDocument(id, url, title, mimeType string) InlineQueryResultDocument {
 	return InlineQueryResultDocument{
-		Type:     "document",
-		ID:       id,
-		URL:      url,
-		Title:    title,
-		MimeType: mimeType,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "document", ID: id},
+		DocumentURL:           url,
+		Title:                 title,
+		MimeType:              mimeType,
 	}
 }
 
 // NewInlineQueryResultCachedDocument create a new inline query with cached photo.
 func NewInlineQueryResultCachedDocument(id, documentID, title string) InlineQueryResultCachedDocument {
 	return InlineQueryResultCachedDocument{
-		Type:       "document",
-		ID:         id,
-		DocumentID: documentID,
-		Title:      title,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "document", ID: id},
+		DocumentFileID:        documentID,
+		Title:                 title,
 	}
 }
 
 // NewInlineQueryResultLocation creates a new inline query location.
 func NewInlineQueryResultLocation(id, title string, latitude, longitude float64) InlineQueryResultLocation {
 	return InlineQueryResultLocation{
-		Type:      "location",
-		ID:        id,
-		Title:     title,
-		Latitude:  latitude,
-		Longitude: longitude,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "location", ID: id},
+		Title:                 title,
+		Latitude:              latitude,
+		Longitude:             longitude,
 	}
 }
 
 // NewInlineQueryResultVenue creates a new inline query venue.
 func NewInlineQueryResultVenue(id, title, address string, latitude, longitude float64) InlineQueryResultVenue {
 	return InlineQueryResultVenue{
-		Type:      "venue",
-		ID:        id,
-		Title:     title,
-		Address:   address,
-		Latitude:  latitude,
-		Longitude: longitude,
+		BaseInlineQueryResult: BaseInlineQueryResult{Type: "venue", ID: id},
+		Title:                 title,
+		Address:               address,
+		Latitude:              latitude,
+		Longitude:             longitude,
 	}
 }
 

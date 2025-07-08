@@ -35,7 +35,7 @@ func TestNewInlineQueryResultArticle(t *testing.T) {
 	if result.Type != "article" ||
 		result.ID != "id" ||
 		result.Title != "title" ||
-		result.InputMessageContent.(InputTextMessageContent).Text != "message" {
+		result.InputMessageContent.(InputTextMessageContent).MessageText != "message" {
 		t.Fail()
 	}
 }
@@ -46,7 +46,7 @@ func TestNewInlineQueryResultArticleMarkdown(t *testing.T) {
 	if result.Type != "article" ||
 		result.ID != "id" ||
 		result.Title != "title" ||
-		result.InputMessageContent.(InputTextMessageContent).Text != "*message*" ||
+		result.InputMessageContent.(InputTextMessageContent).MessageText != "*message*" ||
 		result.InputMessageContent.(InputTextMessageContent).ParseMode != "Markdown" {
 		t.Fail()
 	}
@@ -58,7 +58,7 @@ func TestNewInlineQueryResultArticleHTML(t *testing.T) {
 	if result.Type != "article" ||
 		result.ID != "id" ||
 		result.Title != "title" ||
-		result.InputMessageContent.(InputTextMessageContent).Text != "<b>message</b>" ||
+		result.InputMessageContent.(InputTextMessageContent).MessageText != "<b>message</b>" ||
 		result.InputMessageContent.(InputTextMessageContent).ParseMode != "HTML" {
 		t.Fail()
 	}
@@ -69,7 +69,7 @@ func TestNewInlineQueryResultGIF(t *testing.T) {
 
 	if result.Type != "gif" ||
 		result.ID != "id" ||
-		result.URL != "google.com" {
+		result.GifURL != "google.com" {
 		t.Fail()
 	}
 }
@@ -79,7 +79,7 @@ func TestNewInlineQueryResultMPEG4GIF(t *testing.T) {
 
 	if result.Type != "mpeg4_gif" ||
 		result.ID != "id" ||
-		result.URL != "google.com" {
+		result.Mpeg4URL != "google.com" {
 		t.Fail()
 	}
 }
@@ -89,7 +89,7 @@ func TestNewInlineQueryResultPhoto(t *testing.T) {
 
 	if result.Type != "photo" ||
 		result.ID != "id" ||
-		result.URL != "google.com" {
+		result.PhotoURL != "google.com" {
 		t.Fail()
 	}
 }
@@ -99,8 +99,8 @@ func TestNewInlineQueryResultPhotoWithThumb(t *testing.T) {
 
 	if result.Type != "photo" ||
 		result.ID != "id" ||
-		result.URL != "google.com" ||
-		result.ThumbURL != "thumb.com" {
+		result.PhotoURL != "google.com" ||
+		result.ThumbnailURL != "thumb.com" {
 		t.Fail()
 	}
 }
@@ -110,7 +110,7 @@ func TestNewInlineQueryResultVideo(t *testing.T) {
 
 	if result.Type != "video" ||
 		result.ID != "id" ||
-		result.URL != "google.com" {
+		result.VideoURL != "google.com" {
 		t.Fail()
 	}
 }
@@ -120,7 +120,7 @@ func TestNewInlineQueryResultAudio(t *testing.T) {
 
 	if result.Type != "audio" ||
 		result.ID != "id" ||
-		result.URL != "google.com" ||
+		result.AudioURL != "google.com" ||
 		result.Title != "title" {
 		t.Fail()
 	}
@@ -131,7 +131,7 @@ func TestNewInlineQueryResultVoice(t *testing.T) {
 
 	if result.Type != "voice" ||
 		result.ID != "id" ||
-		result.URL != "google.com" ||
+		result.VoiceURL != "google.com" ||
 		result.Title != "title" {
 		t.Fail()
 	}
@@ -142,7 +142,7 @@ func TestNewInlineQueryResultDocument(t *testing.T) {
 
 	if result.Type != "document" ||
 		result.ID != "id" ||
-		result.URL != "google.com" ||
+		result.DocumentURL != "google.com" ||
 		result.Title != "title" ||
 		result.MimeType != "mime/type" {
 		t.Fail()

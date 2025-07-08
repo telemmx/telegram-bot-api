@@ -271,6 +271,8 @@ type BaseChat struct {
 	ReplyMarkup              interface{}
 	DisableNotification      bool
 	AllowSendingWithoutReply bool
+	BusinessConnectionID     string
+	MessageThreadID          int64
 }
 
 func (chat *BaseChat) params() (Params, error) {
@@ -281,7 +283,8 @@ func (chat *BaseChat) params() (Params, error) {
 	params.AddBool("disable_notification", chat.DisableNotification)
 	params.AddBool("allow_sending_without_reply", chat.AllowSendingWithoutReply)
 	params.AddBool("protect_content", chat.ProtectContent)
-
+	params.AddNonEmpty("business_connection_id", chat.BusinessConnectionID)
+	params.AddNonZero64("message_thread_id", chat.MessageThreadID)
 	err := params.AddInterface("reply_markup", chat.ReplyMarkup)
 
 	return params, err
@@ -299,11 +302,13 @@ func (file BaseFile) params() (Params, error) {
 
 // BaseEdit is base type of all chat edits.
 type BaseEdit struct {
-	ChatID          int64
-	ChannelUsername string
-	MessageID       int
-	InlineMessageID string
-	ReplyMarkup     *InlineKeyboardMarkup
+	ChatID               int64
+	ChannelUsername      string
+	MessageID            int
+	InlineMessageID      string
+	ReplyMarkup          *InlineKeyboardMarkup
+	BusinessConnectionID string
+	LinkPreviewOptions   *LinkPreviewOptions
 }
 
 func (edit BaseEdit) params() (Params, error) {
@@ -315,6 +320,8 @@ func (edit BaseEdit) params() (Params, error) {
 		params.AddFirstValid("chat_id", edit.ChatID, edit.ChannelUsername)
 		params.AddNonZero("message_id", edit.MessageID)
 	}
+	params.AddNonEmpty("business_connection_id", edit.BusinessConnectionID)
+	params.AddInterface("link_preview_options", edit.LinkPreviewOptions)
 
 	err := params.AddInterface("reply_markup", edit.ReplyMarkup)
 
@@ -328,6 +335,10 @@ type MessageConfig struct {
 	ParseMode             string
 	Entities              []MessageEntity
 	DisableWebPagePreview bool
+	LinkPreviewOptions    *LinkPreviewOptions
+	AllowPaidBroadcast    bool
+	ReplyParameters       *ReplyParameters
+	MessageEffectID       string
 }
 
 func (config MessageConfig) params() (Params, error) {
@@ -339,6 +350,10 @@ func (config MessageConfig) params() (Params, error) {
 	params.AddNonEmpty("text", config.Text)
 	params.AddBool("disable_web_page_preview", config.DisableWebPagePreview)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddInterface("link_preview_options", config.LinkPreviewOptions)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
 	err = params.AddInterface("entities", config.Entities)
 
 	return params, err
@@ -354,6 +369,7 @@ type ForwardConfig struct {
 	FromChatID          int64 // required
 	FromChannelUsername string
 	MessageID           int // required
+	VideoStartTimestamp int
 }
 
 func (config ForwardConfig) params() (Params, error) {
@@ -364,6 +380,7 @@ func (config ForwardConfig) params() (Params, error) {
 
 	params.AddNonZero64("from_chat_id", config.FromChatID)
 	params.AddNonZero("message_id", config.MessageID)
+	params.AddNonZero("video_start_timestamp", config.VideoStartTimestamp)
 
 	return params, nil
 }
@@ -372,15 +389,43 @@ func (config ForwardConfig) method() string {
 	return "forwardMessage"
 }
 
+type ForwardMsgsConfig struct {
+	BaseChat
+	MessageThreadID int64
+	FromChatID      int64 // required
+	FromUserName    string
+	MessageIDs      []int // required
+}
+
+func (config ForwardMsgsConfig) params() (Params, error) {
+	params, err := config.BaseChat.params()
+	if err != nil {
+		return params, err
+	}
+	params.AddNonZero64("message_thread_id", config.MessageThreadID)
+	params.AddFirstValid("from_chat_id", config.FromChatID, config.FromUserName)
+	params.AddInterface("message_ids", config.MessageIDs)
+
+	return params, nil
+}
+
+func (config ForwardMsgsConfig) method() string {
+	return "forwardMessage"
+}
+
 // CopyMessageConfig contains information about a copyMessage request.
 type CopyMessageConfig struct {
 	BaseChat
-	FromChatID          int64
-	FromChannelUsername string
-	MessageID           int
-	Caption             string
-	ParseMode           string
-	CaptionEntities     []MessageEntity
+	FromChatID            int64
+	FromChannelUsername   string
+	MessageID             int
+	Caption               string
+	ParseMode             string
+	CaptionEntities       []MessageEntity
+	VideoStartTimestamp   int
+	ShowCaptionAboveMedia bool
+	AllowPaidBroadcast    bool
+	ReplyParameters       *ReplyParameters
 }
 
 func (config CopyMessageConfig) params() (Params, error) {
@@ -393,6 +438,10 @@ func (config CopyMessageConfig) params() (Params, error) {
 	params.AddNonZero("message_id", config.MessageID)
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddNonZero("video_start_timestamp", config.VideoStartTimestamp)
+	params.AddBool("show_caption_above_media", config.ShowCaptionAboveMedia)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	err = params.AddInterface("caption_entities", config.CaptionEntities)
 
 	return params, err
@@ -402,13 +451,42 @@ func (config CopyMessageConfig) method() string {
 	return "copyMessage"
 }
 
+// CopyMessageConfig contains information about a copyMessage request.
+type CopyMessagesConfig struct {
+	BaseChat
+	FromChatID          int64
+	FromChannelUsername string
+	MessageIDs          []int
+	RemoveCaption       bool
+}
+
+func (config CopyMessagesConfig) params() (Params, error) {
+	params, err := config.BaseChat.params()
+	if err != nil {
+		return params, err
+	}
+	params.AddFirstValid("from_chat_id", config.FromChatID, config.FromChannelUsername)
+	params.AddInterface("message_ids", config.MessageIDs)
+	params.AddBool("remove_caption", config.RemoveCaption)
+	return params, err
+}
+
+func (config CopyMessagesConfig) method() string {
+	return "copyMessages"
+}
+
 // PhotoConfig contains information about a SendPhoto request.
 type PhotoConfig struct {
 	BaseFile
-	Thumb           RequestFileData
-	Caption         string
-	ParseMode       string
-	CaptionEntities []MessageEntity
+	Thumb                 RequestFileData
+	Caption               string
+	ParseMode             string
+	CaptionEntities       []MessageEntity
+	MessageEffectID       string
+	ShowCaptionAboveMedia bool
+	HasSpoiler            bool
+	AllowPaidBroadcast    bool
+	ReplyParameters       *ReplyParameters
 }
 
 func (config PhotoConfig) params() (Params, error) {
@@ -416,11 +494,14 @@ func (config PhotoConfig) params() (Params, error) {
 	if err != nil {
 		return params, err
 	}
-
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
 	err = params.AddInterface("caption_entities", config.CaptionEntities)
-
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddBool("show_caption_above_media", config.ShowCaptionAboveMedia)
+	params.AddBool("has_spoiler", config.HasSpoiler)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	return params, err
 }
 
@@ -447,13 +528,16 @@ func (config PhotoConfig) files() []RequestFile {
 // AudioConfig contains information about a SendAudio request.
 type AudioConfig struct {
 	BaseFile
-	Thumb           RequestFileData
-	Caption         string
-	ParseMode       string
-	CaptionEntities []MessageEntity
-	Duration        int
-	Performer       string
-	Title           string
+	Thumb              RequestFileData
+	Caption            string
+	ParseMode          string
+	CaptionEntities    []MessageEntity
+	Duration           int
+	Performer          string
+	Title              string
+	MessageEffectID    string
+	AllowPaidBroadcast bool
+	ReplyParameters    *ReplyParameters
 }
 
 func (config AudioConfig) params() (Params, error) {
@@ -467,6 +551,9 @@ func (config AudioConfig) params() (Params, error) {
 	params.AddNonEmpty("title", config.Title)
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	err = params.AddInterface("caption_entities", config.CaptionEntities)
 
 	return params, err
@@ -500,6 +587,9 @@ type DocumentConfig struct {
 	ParseMode                   string
 	CaptionEntities             []MessageEntity
 	DisableContentTypeDetection bool
+	MessageEffectID             string
+	AllowPaidBroadcast          bool
+	ReplyParameters             *ReplyParameters
 }
 
 func (config DocumentConfig) params() (Params, error) {
@@ -507,6 +597,9 @@ func (config DocumentConfig) params() (Params, error) {
 
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	params.AddBool("disable_content_type_detection", config.DisableContentTypeDetection)
 
 	return params, err
@@ -555,12 +648,22 @@ func (config StickerConfig) files() []RequestFile {
 // VideoConfig contains information about a SendVideo request.
 type VideoConfig struct {
 	BaseFile
-	Thumb             RequestFileData
-	Duration          int
-	Caption           string
-	ParseMode         string
-	CaptionEntities   []MessageEntity
-	SupportsStreaming bool
+
+	Duration              int
+	Width                 int
+	Height                int
+	Thumbnail             RequestFileData
+	Cover                 RequestFileData
+	StartTimeStamp        int
+	Caption               string
+	ParseMode             string
+	ShowCaptionAboveMedia bool
+	HasSpoiler            bool
+	SupportsStreaming     bool
+	AllowPaidBroadcast    bool
+	CaptionEntities       []MessageEntity
+	MessageEffectID       string
+	ReplyParameters       *ReplyParameters
 }
 
 func (config VideoConfig) params() (Params, error) {
@@ -573,6 +676,14 @@ func (config VideoConfig) params() (Params, error) {
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
 	params.AddBool("supports_streaming", config.SupportsStreaming)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddBool("show_caption_above_media", config.ShowCaptionAboveMedia)
+	params.AddNonZero("start_timestamp", config.StartTimeStamp)
+	params.AddNonZero("width", config.Width)
+	params.AddNonZero("height", config.Height)
+	params.AddBool("has_spoiler", config.HasSpoiler)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	err = params.AddInterface("caption_entities", config.CaptionEntities)
 
 	return params, err
@@ -587,25 +698,36 @@ func (config VideoConfig) files() []RequestFile {
 		Name: "video",
 		Data: config.File,
 	}}
-
-	if config.Thumb != nil {
+	if config.Thumbnail != nil {
 		files = append(files, RequestFile{
-			Name: "thumb",
-			Data: config.Thumb,
+			Name: "thumbnail",
+			Data: config.Thumbnail,
 		})
 	}
-
+	if config.Cover != nil {
+		files = append(files, RequestFile{
+			Name: "cover",
+			Data: config.Cover,
+		})
+	}
 	return files
 }
 
 // AnimationConfig contains information about a SendAnimation request.
 type AnimationConfig struct {
 	BaseFile
-	Duration        int
-	Thumb           RequestFileData
-	Caption         string
-	ParseMode       string
-	CaptionEntities []MessageEntity
+	Duration              int
+	Thumb                 RequestFileData
+	Caption               string
+	ParseMode             string
+	CaptionEntities       []MessageEntity
+	MessageEffectID       string
+	Width                 int
+	Height                int
+	ShowCaptionAboveMedia bool
+	HasSpoiler            bool
+	AllowPaidBroadcast    bool
+	ReplyParameters       *ReplyParameters
 }
 
 func (config AnimationConfig) params() (Params, error) {
@@ -617,6 +739,13 @@ func (config AnimationConfig) params() (Params, error) {
 	params.AddNonZero("duration", config.Duration)
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddNonZero("width", config.Width)
+	params.AddNonZero("height", config.Height)
+	params.AddBool("show_caption_above_media", config.ShowCaptionAboveMedia)
+	params.AddBool("has_spoiler", config.HasSpoiler)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	err = params.AddInterface("caption_entities", config.CaptionEntities)
 
 	return params, err
@@ -648,6 +777,10 @@ type VideoNoteConfig struct {
 	Thumb    RequestFileData
 	Duration int
 	Length   int
+
+	AllowPaidBroadcast bool
+	ReplyParameters    *ReplyParameters
+	MessageEffectID    string
 }
 
 func (config VideoNoteConfig) params() (Params, error) {
@@ -655,6 +788,9 @@ func (config VideoNoteConfig) params() (Params, error) {
 
 	params.AddNonZero("duration", config.Duration)
 	params.AddNonZero("length", config.Length)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 
 	return params, err
 }
@@ -679,14 +815,54 @@ func (config VideoNoteConfig) files() []RequestFile {
 	return files
 }
 
+type PaidMediaConfig struct {
+	BaseChat
+	StarCount             int
+	Media                 []RequestFile
+	Payload               string
+	Caption               string
+	ParseMode             string
+	CaptionEntities       []MessageEntity
+	ShowCaptionAboveMedia bool
+	AllowPaidBroadcast    bool
+	ReplyParameters       *ReplyParameters
+}
+
+func (config PaidMediaConfig) params() (Params, error) {
+	params, err := config.BaseChat.params()
+
+	params.AddNonZero("star_count", config.StarCount)
+	params.AddInterface("media", config.Media)
+	params.AddNonEmpty("payload", config.Payload)
+	params.AddNonEmpty("caption", config.Caption)
+	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddInterface("caption_entities", config.CaptionEntities)
+	params.AddBool("show_caption_above_media", config.ShowCaptionAboveMedia)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
+
+	return params, err
+}
+
+func (config PaidMediaConfig) method() string {
+	return "sendPaidMedia"
+}
+
+func (config PaidMediaConfig) files() []RequestFile {
+	return config.Media
+}
+
 // VoiceConfig contains information about a SendVoice request.
 type VoiceConfig struct {
 	BaseFile
-	Thumb           RequestFileData
-	Caption         string
-	ParseMode       string
-	CaptionEntities []MessageEntity
-	Duration        int
+	Thumb              RequestFileData
+	Caption            string
+	ParseMode          string
+	CaptionEntities    []MessageEntity
+	Duration           int
+	AllowPaidBroadcast bool
+	ReplyParameters    *ReplyParameters
+	MessageEffectID    string
 }
 
 func (config VoiceConfig) params() (Params, error) {
@@ -698,6 +874,9 @@ func (config VoiceConfig) params() (Params, error) {
 	params.AddNonZero("duration", config.Duration)
 	params.AddNonEmpty("caption", config.Caption)
 	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	err = params.AddInterface("caption_entities", config.CaptionEntities)
 
 	return params, err
@@ -732,6 +911,10 @@ type LocationConfig struct {
 	LivePeriod           int     // optional
 	Heading              int     // optional
 	ProximityAlertRadius int     // optional
+
+	AllowPaidBroadcast bool
+	MessageEffectID    string
+	ReplyParameters    *ReplyParameters
 }
 
 func (config LocationConfig) params() (Params, error) {
@@ -742,6 +925,10 @@ func (config LocationConfig) params() (Params, error) {
 	params.AddNonZeroFloat("horizontal_accuracy", config.HorizontalAccuracy)
 	params.AddNonZero("live_period", config.LivePeriod)
 	params.AddNonZero("heading", config.Heading)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
+
 	params.AddNonZero("proximity_alert_radius", config.ProximityAlertRadius)
 
 	return params, err
@@ -749,6 +936,165 @@ func (config LocationConfig) params() (Params, error) {
 
 func (config LocationConfig) method() string {
 	return "sendLocation"
+}
+
+type DeleteMessagesConfig struct {
+	BaseChat
+	MessageIDs []int
+}
+
+func (config DeleteMessagesConfig) params() (Params, error) {
+	params, err := config.BaseChat.params()
+	params.AddInterface("message_ids", config.MessageIDs)
+	return params, err
+}
+
+func (config DeleteMessagesConfig) method() string {
+	return "deleteMessages"
+}
+
+type GetAvailableGiftsConfig struct {
+}
+
+func (config GetAvailableGiftsConfig) params() (Params, error) {
+	return Params{}, nil
+}
+
+func (config GetAvailableGiftsConfig) method() string {
+	return "getAvailableGifts"
+}
+
+type SendGiftConfig struct {
+	UserID        int64
+	ChatID        int64
+	UserName      string
+	GiftID        string
+	PayForUpgrade bool
+	Text          string
+	TextParseMode string
+	TextEntities  []MessageEntity
+}
+
+func (config SendGiftConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonZero64("user_id", config.UserID)
+	params.AddFirstValid("chat_id", config.ChatID, config.UserName)
+	params.AddNonEmpty("gift_id", config.GiftID)
+	params.AddBool("pay_for_upgrade", config.PayForUpgrade)
+	params.AddNonEmpty("text", config.Text)
+	params.AddNonEmpty("text_parse_mode", config.TextParseMode)
+	params.AddInterface("text_entities", config.TextEntities)
+	return params, nil
+}
+
+func (config SendGiftConfig) method() string {
+	return "sendGift"
+}
+
+/*
+*
+giftPremiumSubscription
+Gifts a Telegram Premium subscription to the given user. Returns True on success.
+
+Parameter	Type	Required	Description
+user_id	Integer	Yes	Unique identifier of the target user who will receive a Telegram Premium subscription
+month_count	Integer	Yes	Number of months the Telegram Premium subscription will be active for the user; must be one of 3, 6, or 12
+star_count	Integer	Yes	Number of Telegram Stars to pay for the Telegram Premium subscription; must be 1000 for 3 months, 1500 for 6 months, and 2500 for 12 months
+text	String	Optional	Text that will be shown along with the service message about the subscription; 0-128 characters
+text_parse_mode	String	Optional	Mode for parsing entities in the text. See formatting options for more details. Entities other than “bold”, “italic”, “underline”, “strikethrough”, “spoiler”, and “custom_emoji” are ignored.
+text_entities	Array of MessageEntity	Optional	A JSON-serialized list of special entities that appear in the gift text. It can be specified instead of text_parse_mode. Entities other than “bold”, “italic”, “underline”, “strikethrough”, “spoiler”, and “custom_emoji” are ignored.
+*/
+type GiftPremiumSubscriptionConfig struct {
+	UserID        int64
+	MonthCount    int
+	StarCount     int
+	Text          string
+	TextParseMode string
+	TextEntities  []MessageEntity
+}
+
+func (config GiftPremiumSubscriptionConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonZero64("user_id", config.UserID)
+	params.AddNonZero("month_count", config.MonthCount)
+	params.AddNonZero("star_count", config.StarCount)
+	params.AddNonEmpty("text", config.Text)
+	params.AddNonEmpty("text_parse_mode", config.TextParseMode)
+	params.AddInterface("text_entities", config.TextEntities)
+	return params, nil
+}
+
+func (config GiftPremiumSubscriptionConfig) method() string {
+	return "giftPremiumSubscription"
+}
+
+/*
+verifyUser
+Verifies a user on behalf of the organization which is represented by the bot. Returns True on success.
+
+Parameter	Type	Required	Description
+user_id	Integer	Yes	Unique identifier of the target user
+custom_description	String	Optional	Custom description for the verification; 0-70 characters. Must be empty if the organization isn't allowed to provide a custom verification description.
+*/
+type VerifyUserConfig struct {
+	UserID            int64
+	CustomDescription string
+}
+
+func (config VerifyUserConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonZero64("user_id", config.UserID)
+	params.AddNonEmpty("custom_description", config.CustomDescription)
+	return params, nil
+}
+
+func (config VerifyUserConfig) method() string {
+	return "verifyUser"
+}
+
+/*
+verifyChat
+Verifies a chat on behalf of the organization which is represented by the bot. Returns True on success.
+
+Parameter	Type	Required	Description
+chat_id	Integer or String	Yes	Unique identifier for the target chat or username of the target channel (in the format @channelusername)
+custom_description	String	Optional	Custom description for the verification; 0-70 characters. Must be empty if the organization isn't allowed to provide a custom verification description.
+*/
+type VerifyChatConfig struct {
+	ChatID            int64
+	CustomDescription string
+}
+
+func (config VerifyChatConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonZero64("chat_id", config.ChatID)
+	params.AddNonEmpty("custom_description", config.CustomDescription)
+	return params, nil
+}
+
+func (config VerifyChatConfig) method() string {
+	return "verifyChat"
+}
+
+/*
+removeUserVerification
+Removes verification from a user who is currently verified on behalf of the organization represented by the bot. Returns True on success.
+
+Parameter	Type	Required	Description
+user_id	Integer	Yes	Unique identifier of the target user
+*/
+type RemoveUserVerificationConfig struct {
+	UserID int64
+}
+
+func (config RemoveUserVerificationConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonZero64("user_id", config.UserID)
+	return params, nil
+}
+
+func (config RemoveUserVerificationConfig) method() string {
+	return "removeUserVerification"
 }
 
 // EditMessageLiveLocationConfig allows you to update a live location.
@@ -759,6 +1105,7 @@ type EditMessageLiveLocationConfig struct {
 	HorizontalAccuracy   float64 // optional
 	Heading              int     // optional
 	ProximityAlertRadius int     // optional
+	LivePeriod           int     // optional
 }
 
 func (config EditMessageLiveLocationConfig) params() (Params, error) {
@@ -769,6 +1116,7 @@ func (config EditMessageLiveLocationConfig) params() (Params, error) {
 	params.AddNonZeroFloat("horizontal_accuracy", config.HorizontalAccuracy)
 	params.AddNonZero("heading", config.Heading)
 	params.AddNonZero("proximity_alert_radius", config.ProximityAlertRadius)
+	params.AddNonZero("live_period", config.LivePeriod)
 
 	return params, err
 }
@@ -793,14 +1141,17 @@ func (config StopMessageLiveLocationConfig) method() string {
 // VenueConfig contains information about a SendVenue request.
 type VenueConfig struct {
 	BaseChat
-	Latitude        float64 // required
-	Longitude       float64 // required
-	Title           string  // required
-	Address         string  // required
-	FoursquareID    string
-	FoursquareType  string
-	GooglePlaceID   string
-	GooglePlaceType string
+	Latitude           float64 // required
+	Longitude          float64 // required
+	Title              string  // required
+	Address            string  // required
+	FoursquareID       string
+	FoursquareType     string
+	GooglePlaceID      string
+	GooglePlaceType    string
+	AllowPaidBroadcast bool
+	MessageEffectID    string
+	ReplyParameters    *ReplyParameters
 }
 
 func (config VenueConfig) params() (Params, error) {
@@ -814,6 +1165,9 @@ func (config VenueConfig) params() (Params, error) {
 	params.AddNonEmpty("foursquare_type", config.FoursquareType)
 	params.AddNonEmpty("google_place_id", config.GooglePlaceID)
 	params.AddNonEmpty("google_place_type", config.GooglePlaceType)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 
 	return params, err
 }
@@ -825,10 +1179,13 @@ func (config VenueConfig) method() string {
 // ContactConfig allows you to send a contact.
 type ContactConfig struct {
 	BaseChat
-	PhoneNumber string
-	FirstName   string
-	LastName    string
-	VCard       string
+	PhoneNumber        string
+	FirstName          string
+	LastName           string
+	VCard              string
+	AllowPaidBroadcast bool
+	MessageEffectID    string
+	ReplyParameters    *ReplyParameters
 }
 
 func (config ContactConfig) params() (Params, error) {
@@ -839,6 +1196,9 @@ func (config ContactConfig) params() (Params, error) {
 
 	params.AddNonEmpty("last_name", config.LastName)
 	params.AddNonEmpty("vcard", config.VCard)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 
 	return params, err
 }
@@ -847,10 +1207,51 @@ func (config ContactConfig) method() string {
 	return "sendContact"
 }
 
+type MessageReactionConfig struct {
+	BaseChat
+	MessageID int
+	Reaction  []ReactionType
+	IsBig     bool
+}
+
+func (config MessageReactionConfig) params() (Params, error) {
+	params, err := config.BaseChat.params()
+
+	params.AddNonZero("message_id", config.MessageID)
+	params.AddInterface("reaction", config.Reaction)
+	params.AddBool("is_big", config.IsBig)
+
+	return params, err
+}
+
+func (config MessageReactionConfig) method() string {
+	return "setMessageReaction"
+}
+
+type UserEmojiStatusConfig struct {
+	UserID                    int64
+	EmojiStatusCustomEmojiID  string
+	EmojiStatusExpirationDate int
+}
+
+func (config UserEmojiStatusConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonZero64("user_id", config.UserID)
+	params.AddNonEmpty("emoji_status_custom_emoji_id", config.EmojiStatusCustomEmojiID)
+	params.AddNonZero("emoji_status_expiration_date", config.EmojiStatusExpirationDate)
+	return params, nil
+}
+
+func (config UserEmojiStatusConfig) method() string {
+	return "setUserEmojiStatus"
+}
+
 // SendPollConfig allows you to send a poll.
 type SendPollConfig struct {
 	BaseChat
 	Question              string
+	QuestionParseMode     string
+	QuestionEntities      []MessageEntity
 	Options               []string
 	IsAnonymous           bool
 	Type                  string
@@ -862,6 +1263,9 @@ type SendPollConfig struct {
 	OpenPeriod            int
 	CloseDate             int
 	IsClosed              bool
+	MessageEffectID       string
+	ReplyParameters       *ReplyParameters
+	AllowPaidBroadcast    bool
 }
 
 func (config SendPollConfig) params() (Params, error) {
@@ -871,7 +1275,8 @@ func (config SendPollConfig) params() (Params, error) {
 	}
 
 	params["question"] = config.Question
-	if err = params.AddInterface("options", config.Options); err != nil {
+	params.AddNonEmpty("question_parse_mode", config.QuestionParseMode)
+	if err = params.AddInterface("question_entities", config.QuestionEntities); err != nil {
 		return params, err
 	}
 	params["is_anonymous"] = strconv.FormatBool(config.IsAnonymous)
@@ -883,6 +1288,9 @@ func (config SendPollConfig) params() (Params, error) {
 	params.AddNonEmpty("explanation_parse_mode", config.ExplanationParseMode)
 	params.AddNonZero("open_period", config.OpenPeriod)
 	params.AddNonZero("close_date", config.CloseDate)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	err = params.AddInterface("explanation_entities", config.ExplanationEntities)
 
 	return params, err
@@ -890,85 +1298,6 @@ func (config SendPollConfig) params() (Params, error) {
 
 func (SendPollConfig) method() string {
 	return "sendPoll"
-}
-
-// GameConfig allows you to send a game.
-type GameConfig struct {
-	BaseChat
-	GameShortName string
-}
-
-func (config GameConfig) params() (Params, error) {
-	params, err := config.BaseChat.params()
-
-	params["game_short_name"] = config.GameShortName
-
-	return params, err
-}
-
-func (config GameConfig) method() string {
-	return "sendGame"
-}
-
-// SetGameScoreConfig allows you to update the game score in a chat.
-type SetGameScoreConfig struct {
-	UserID             int64
-	Score              int
-	Force              bool
-	DisableEditMessage bool
-	ChatID             int64
-	ChannelUsername    string
-	MessageID          int
-	InlineMessageID    string
-}
-
-func (config SetGameScoreConfig) params() (Params, error) {
-	params := make(Params)
-
-	params.AddNonZero64("user_id", config.UserID)
-	params.AddNonZero("scrore", config.Score)
-	params.AddBool("disable_edit_message", config.DisableEditMessage)
-
-	if config.InlineMessageID != "" {
-		params["inline_message_id"] = config.InlineMessageID
-	} else {
-		params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
-		params.AddNonZero("message_id", config.MessageID)
-	}
-
-	return params, nil
-}
-
-func (config SetGameScoreConfig) method() string {
-	return "setGameScore"
-}
-
-// GetGameHighScoresConfig allows you to fetch the high scores for a game.
-type GetGameHighScoresConfig struct {
-	UserID          int64
-	ChatID          int64
-	ChannelUsername string
-	MessageID       int
-	InlineMessageID string
-}
-
-func (config GetGameHighScoresConfig) params() (Params, error) {
-	params := make(Params)
-
-	params.AddNonZero64("user_id", config.UserID)
-
-	if config.InlineMessageID != "" {
-		params["inline_message_id"] = config.InlineMessageID
-	} else {
-		params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
-		params.AddNonZero("message_id", config.MessageID)
-	}
-
-	return params, nil
-}
-
-func (config GetGameHighScoresConfig) method() string {
-	return "getGameHighScores"
 }
 
 // ChatActionConfig contains information about a SendChatAction request.
@@ -1019,9 +1348,10 @@ func (config EditMessageTextConfig) method() string {
 // EditMessageCaptionConfig allows you to modify the caption of a message.
 type EditMessageCaptionConfig struct {
 	BaseEdit
-	Caption         string
-	ParseMode       string
-	CaptionEntities []MessageEntity
+	Caption               string
+	ParseMode             string
+	CaptionEntities       []MessageEntity
+	ShowCaptionAboveMedia bool
 }
 
 func (config EditMessageCaptionConfig) params() (Params, error) {
@@ -1032,6 +1362,7 @@ func (config EditMessageCaptionConfig) params() (Params, error) {
 
 	params["caption"] = config.Caption
 	params.AddNonEmpty("parse_mode", config.ParseMode)
+	params.AddBool("show_caption_above_media", config.ShowCaptionAboveMedia)
 	err = params.AddInterface("caption_entities", config.CaptionEntities)
 
 	return params, err
@@ -1164,10 +1495,15 @@ type WebhookConfig struct {
 	MaxConnections     int
 	AllowedUpdates     []string
 	DropPendingUpdates bool
+	SecretToken        string
 }
 
 func (config WebhookConfig) method() string {
 	return "setWebhook"
+}
+
+func (config WebhookInfo) method() string {
+	return "getWebhookInfo"
 }
 
 func (config WebhookConfig) params() (Params, error) {
@@ -1181,6 +1517,7 @@ func (config WebhookConfig) params() (Params, error) {
 	params.AddNonZero("max_connections", config.MaxConnections)
 	err := params.AddInterface("allowed_updates", config.AllowedUpdates)
 	params.AddBool("drop_pending_updates", config.DropPendingUpdates)
+	params.AddNonEmpty("secret_token", config.SecretToken)
 
 	return params, err
 }
@@ -1213,15 +1550,30 @@ func (config DeleteWebhookConfig) params() (Params, error) {
 	return params, nil
 }
 
+/*
+text	String	Label text on the button
+web_app	WebAppInfo	Optional. Description of the Web App that will be launched when the user presses the button. The Web App will be able to switch back to the inline mode using the method switchInlineQuery inside the Web App.
+start_parameter	String	Optional. Deep-linking parameter for the /start message sent to the bot when a user presses the button. 1-64 characters, only A-Z, a-z, 0-9, _ and - are allowed.
+
+Example: An inline bot that sends YouTube videos can ask the user to connect the bot to their YouTube account to adapt search results accordingly. To do this, it displays a 'Connect your YouTube account' button above the results, or even before showing any. The user presses the button, switches to a private chat with the bot and, in doing so, passes a start parameter that instructs the bot to return an OAuth link. Once done, the bot can offer a switch_inline button so that the user can easily return to the chat where they wanted to use the bot's inline capabilities.
+*/
+
+type InlineQueryResultsButton struct {
+	Text           string     `json:"text"`
+	WebApp         WebAppInfo `json:"web_app"`
+	StartParameter string     `json:"start_parameter"`
+}
+
 // InlineConfig contains information on making an InlineQuery response.
 type InlineConfig struct {
-	InlineQueryID     string        `json:"inline_query_id"`
-	Results           []interface{} `json:"results"`
-	CacheTime         int           `json:"cache_time"`
-	IsPersonal        bool          `json:"is_personal"`
-	NextOffset        string        `json:"next_offset"`
-	SwitchPMText      string        `json:"switch_pm_text"`
-	SwitchPMParameter string        `json:"switch_pm_parameter"`
+	InlineQueryID     string                   `json:"inline_query_id"`
+	Results           []interface{}            `json:"results"`
+	CacheTime         int                      `json:"cache_time"`
+	IsPersonal        bool                     `json:"is_personal"`
+	NextOffset        string                   `json:"next_offset"`
+	SwitchPMText      string                   `json:"switch_pm_text"`
+	SwitchPMParameter string                   `json:"switch_pm_parameter"`
+	Button            InlineQueryResultsButton `json:"button"`
 }
 
 func (config InlineConfig) method() string {
@@ -1237,6 +1589,7 @@ func (config InlineConfig) params() (Params, error) {
 	params.AddNonEmpty("next_offset", config.NextOffset)
 	params.AddNonEmpty("switch_pm_text", config.SwitchPMText)
 	params.AddNonEmpty("switch_pm_parameter", config.SwitchPMParameter)
+	params.AddInterface("button", config.Button)
 	err := params.AddInterface("results", config.Results)
 
 	return params, err
@@ -1264,6 +1617,20 @@ func (config AnswerWebAppQueryConfig) params() (Params, error) {
 
 	return params, err
 }
+
+/**
+
+Stores a message that can be sent by a user of a Mini App. Returns a PreparedInlineMessage object.
+
+Parameter	Type	Required	Description
+user_id	Integer	Yes	Unique identifier of the target user that can use the prepared message
+result	InlineQueryResult	Yes	A JSON-serialized object describing the message to be sent
+allow_user_chats	Boolean	Optional	Pass True if the message can be sent to private chats with users
+allow_bot_chats	Boolean	Optional	Pass True if the message can be sent to private chats with bots
+allow_group_chats	Boolean	Optional	Pass True if the message can be sent to group and supergroup chats
+allow_channel_chats	Boolean	Optional	Pass True if the message can be sent to channel chats
+
+*/
 
 // CallbackConfig contains information on making a CallbackQuery response.
 type CallbackConfig struct {
@@ -1349,8 +1716,9 @@ type KickChatMemberConfig = BanChatMemberConfig
 // RestrictChatMemberConfig contains fields to restrict members of chat
 type RestrictChatMemberConfig struct {
 	ChatMemberConfig
-	UntilDate   int64
-	Permissions *ChatPermissions
+	UntilDate                     int64
+	Permissions                   *ChatPermissions
+	UseIndependentChatPermissions bool
 }
 
 func (config RestrictChatMemberConfig) method() string {
@@ -1365,6 +1733,7 @@ func (config RestrictChatMemberConfig) params() (Params, error) {
 
 	err := params.AddInterface("permissions", config.Permissions)
 	params.AddNonZero64("until_date", config.UntilDate)
+	params.AddBool("use_independent_chat_permissions", config.UseIndependentChatPermissions)
 
 	return params, err
 }
@@ -1383,6 +1752,10 @@ type PromoteChatMemberConfig struct {
 	CanRestrictMembers  bool
 	CanPinMessages      bool
 	CanPromoteMembers   bool
+	CanPostStories      bool
+	CanEditStories      bool
+	CanManageTopics     bool
+	CanDeleteStories    bool
 }
 
 func (config PromoteChatMemberConfig) method() string {
@@ -1406,6 +1779,10 @@ func (config PromoteChatMemberConfig) params() (Params, error) {
 	params.AddBool("can_restrict_members", config.CanRestrictMembers)
 	params.AddBool("can_pin_messages", config.CanPinMessages)
 	params.AddBool("can_promote_members", config.CanPromoteMembers)
+	params.AddBool("can_post_stories", config.CanPostStories)
+	params.AddBool("can_edit_stories", config.CanEditStories)
+	params.AddBool("can_manage_topics", config.CanManageTopics)
+	params.AddBool("can_delete_stories", config.CanDeleteStories)
 
 	return params, nil
 }
@@ -1525,7 +1902,8 @@ func (ChatAdministratorsConfig) method() string {
 // restrict members.
 type SetChatPermissionsConfig struct {
 	ChatConfig
-	Permissions *ChatPermissions
+	Permissions                   *ChatPermissions
+	UseIndependentChatPermissions bool
 }
 
 func (SetChatPermissionsConfig) method() string {
@@ -1537,8 +1915,39 @@ func (config SetChatPermissionsConfig) params() (Params, error) {
 
 	params.AddFirstValid("chat_id", config.ChatID, config.SuperGroupUsername)
 	err := params.AddInterface("permissions", config.Permissions)
+	params.AddBool("use_independent_chat_permissions", config.UseIndependentChatPermissions)
 
 	return params, err
+}
+
+type ChatSubscriptionInviteLinkConfig struct {
+	ChatConfig
+	Name               string
+	SubscriptionPeriod int
+	SubscriptionPrice  int
+}
+
+func (ChatSubscriptionInviteLinkConfig) method() string {
+	return "createChatSubscriptionInviteLink"
+}
+
+type EditChatSubscriptionInviteLinkConfig struct {
+	ChatConfig
+	Name       string
+	InviteLink string
+}
+
+func (EditChatSubscriptionInviteLinkConfig) method() string {
+	return "editChatSubscriptionInviteLink"
+}
+
+func (config EditChatSubscriptionInviteLinkConfig) params() (Params, error) {
+	params := make(Params)
+
+	params.AddFirstValid("chat_id", config.ChatID, config.Name)
+	params.AddNonEmpty("invite_link", config.InviteLink)
+
+	return params, nil
 }
 
 // ChatInviteLinkConfig contains information about getting a chat link.
@@ -1720,70 +2129,6 @@ func (GetChatMemberConfig) method() string {
 	return "getChatMember"
 }
 
-// InvoiceConfig contains information for sendInvoice request.
-type InvoiceConfig struct {
-	BaseChat
-	Title                     string         // required
-	Description               string         // required
-	Payload                   string         // required
-	ProviderToken             string         // required
-	Currency                  string         // required
-	Prices                    []LabeledPrice // required
-	MaxTipAmount              int
-	SuggestedTipAmounts       []int
-	StartParameter            string
-	ProviderData              string
-	PhotoURL                  string
-	PhotoSize                 int
-	PhotoWidth                int
-	PhotoHeight               int
-	NeedName                  bool
-	NeedPhoneNumber           bool
-	NeedEmail                 bool
-	NeedShippingAddress       bool
-	SendPhoneNumberToProvider bool
-	SendEmailToProvider       bool
-	IsFlexible                bool
-}
-
-func (config InvoiceConfig) params() (Params, error) {
-	params, err := config.BaseChat.params()
-	if err != nil {
-		return params, err
-	}
-
-	params["title"] = config.Title
-	params["description"] = config.Description
-	params["payload"] = config.Payload
-	params["provider_token"] = config.ProviderToken
-	params["currency"] = config.Currency
-	if err = params.AddInterface("prices", config.Prices); err != nil {
-		return params, err
-	}
-
-	params.AddNonZero("max_tip_amount", config.MaxTipAmount)
-	err = params.AddInterface("suggested_tip_amounts", config.SuggestedTipAmounts)
-	params.AddNonEmpty("start_parameter", config.StartParameter)
-	params.AddNonEmpty("provider_data", config.ProviderData)
-	params.AddNonEmpty("photo_url", config.PhotoURL)
-	params.AddNonZero("photo_size", config.PhotoSize)
-	params.AddNonZero("photo_width", config.PhotoWidth)
-	params.AddNonZero("photo_height", config.PhotoHeight)
-	params.AddBool("need_name", config.NeedName)
-	params.AddBool("need_phone_number", config.NeedPhoneNumber)
-	params.AddBool("need_email", config.NeedEmail)
-	params.AddBool("need_shipping_address", config.NeedShippingAddress)
-	params.AddBool("is_flexible", config.IsFlexible)
-	params.AddBool("send_phone_number_to_provider", config.SendPhoneNumberToProvider)
-	params.AddBool("send_email_to_provider", config.SendEmailToProvider)
-
-	return params, err
-}
-
-func (config InvoiceConfig) method() string {
-	return "sendInvoice"
-}
-
 // ShippingConfig contains information for answerShippingQuery request.
 type ShippingConfig struct {
 	ShippingQueryID string // required
@@ -1850,10 +2195,11 @@ func (config DeleteMessageConfig) params() (Params, error) {
 
 // PinChatMessageConfig contains information of a message in a chat to pin.
 type PinChatMessageConfig struct {
-	ChatID              int64
-	ChannelUsername     string
-	MessageID           int
-	DisableNotification bool
+	ChatID               int64
+	ChannelUsername      string
+	MessageID            int
+	DisableNotification  bool
+	BusinessConnectionID string
 }
 
 func (config PinChatMessageConfig) method() string {
@@ -1866,6 +2212,7 @@ func (config PinChatMessageConfig) params() (Params, error) {
 	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
 	params.AddNonZero("message_id", config.MessageID)
 	params.AddBool("disable_notification", config.DisableNotification)
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
 
 	return params, nil
 }
@@ -1874,9 +2221,10 @@ func (config PinChatMessageConfig) params() (Params, error) {
 //
 // If MessageID is not specified, it will unpin the most recent pin.
 type UnpinChatMessageConfig struct {
-	ChatID          int64
-	ChannelUsername string
-	MessageID       int
+	ChatID               int64
+	ChannelUsername      string
+	MessageID            int
+	BusinessConnectionID string
 }
 
 func (config UnpinChatMessageConfig) method() string {
@@ -1888,7 +2236,329 @@ func (config UnpinChatMessageConfig) params() (Params, error) {
 
 	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
 	params.AddNonZero("message_id", config.MessageID)
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
 
+	return params, nil
+}
+
+type ForumTopicIconStickersConfig struct {
+}
+
+func (config ForumTopicIconStickersConfig) method() string {
+	return "getForumTopicIconStickers"
+}
+
+func (config ForumTopicIconStickersConfig) params() (Params, error) {
+	params := make(Params)
+	return params, nil
+}
+
+type ForumTopic struct {
+	ChatID            int64
+	ChannelUsername   string
+	IconCustomEmojiID string
+	Name              string
+	MessageThreadID   int
+}
+
+type ForumTopicConfig struct {
+	ForumTopic
+	IconColor int
+}
+
+func (config ForumTopicConfig) method() string {
+	return "createForumTopic"
+}
+
+func (config ForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonEmpty("name", config.Name)
+	params.AddNonZero("icon_color", config.IconColor)
+	params.AddNonEmpty("icon_custom_emoji_id", config.IconCustomEmojiID)
+	return params, nil
+}
+
+type EditForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config EditForumTopicConfig) method() string {
+	return "editForumTopic"
+}
+
+func (config EditForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonZero("message_thread_id", config.MessageThreadID)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonEmpty("name", config.Name)
+	params.AddNonEmpty("icon_custom_emoji_id", config.IconCustomEmojiID)
+	return params, nil
+}
+
+type CloseForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config CloseForumTopicConfig) method() string {
+	return "closeForumTopic"
+}
+
+func (config CloseForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero("message_thread_id", config.MessageThreadID)
+	return params, nil
+}
+
+type ReopenForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config ReopenForumTopicConfig) method() string {
+	return "reopenForumTopic"
+}
+
+func (config ReopenForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero("message_thread_id", config.MessageThreadID)
+	return params, nil
+}
+
+type DeleteForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config DeleteForumTopicConfig) method() string {
+	return "deleteForumTopic"
+}
+
+func (config DeleteForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero("message_thread_id", config.MessageThreadID)
+	return params, nil
+}
+
+type UnpinAllForumTopicMessagesConfig struct {
+	ForumTopic
+}
+
+func (config UnpinAllForumTopicMessagesConfig) method() string {
+	return "unpinAllForumTopicMessages"
+}
+
+func (config UnpinAllForumTopicMessagesConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero("message_thread_id", config.MessageThreadID)
+	return params, nil
+}
+
+type EditGeneralForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config EditGeneralForumTopicConfig) method() string {
+	return "editGeneralForumTopic"
+}
+
+func (config EditGeneralForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero("message_thread_id", config.MessageThreadID)
+	return params, nil
+}
+
+type CloseGeneralForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config CloseGeneralForumTopicConfig) method() string {
+	return "closeGeneralForumTopic"
+}
+
+func (config CloseGeneralForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	return params, nil
+}
+
+type ReopenGeneralForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config ReopenGeneralForumTopicConfig) method() string {
+	return "reopenGeneralForumTopic"
+}
+
+func (config ReopenGeneralForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	return params, nil
+}
+
+type HideGeneralForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config HideGeneralForumTopicConfig) method() string {
+	return "hideGeneralForumTopic"
+}
+
+func (config HideGeneralForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	return params, nil
+}
+
+type UnhideGeneralForumTopicConfig struct {
+	ForumTopic
+}
+
+func (config UnhideGeneralForumTopicConfig) method() string {
+	return "unhideGeneralForumTopic"
+}
+
+func (config UnhideGeneralForumTopicConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	return params, nil
+}
+
+type UnpinAllGeneralForumTopicMessagesConfig struct {
+	ForumTopic
+}
+
+func (config UnpinAllGeneralForumTopicMessagesConfig) method() string {
+	return "unpinAllGeneralForumTopicMessages"
+}
+
+func (config UnpinAllGeneralForumTopicMessagesConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	return params, nil
+}
+
+type UserChatBoostsConfig struct {
+	ChatID          int64
+	ChannelUsername string
+	UserID          int64
+}
+
+func (config UserChatBoostsConfig) method() string {
+	return "getUserChatBoosts"
+}
+
+func (config UserChatBoostsConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero64("user_id", config.UserID)
+	return params, nil
+}
+
+type BusinessConnectionConfig struct {
+	BusinessConnectionID string
+}
+
+func (config BusinessConnectionConfig) method() string {
+	return "getBusinessConnection"
+}
+
+func (config BusinessConnectionConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
+	return params, nil
+}
+
+type SetMyNameConfig struct {
+	Name         string
+	LanguageCode string
+}
+
+func (config SetMyNameConfig) method() string {
+	return "setMyName"
+}
+
+func (config SetMyNameConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonEmpty("name", config.Name)
+	params.AddNonEmpty("language_code", config.LanguageCode)
+	return params, nil
+}
+
+type GetMyNameConfig struct {
+	LanguageCode string
+}
+
+func (config GetMyNameConfig) method() string {
+	return "getMyName"
+}
+
+func (config GetMyNameConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonEmpty("language_code", config.LanguageCode)
+	return params, nil
+}
+
+type SetMyDescriptionConfig struct {
+	Description  string
+	LanguageCode string
+}
+
+func (config SetMyDescriptionConfig) method() string {
+	return "setMyDescription"
+}
+
+func (config SetMyDescriptionConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonEmpty("description", config.Description)
+	params.AddNonEmpty("language_code", config.LanguageCode)
+	return params, nil
+}
+
+type GetMyDescriptionConfig struct {
+	LanguageCode string
+}
+
+func (config GetMyDescriptionConfig) method() string {
+	return "getMyDescription"
+}
+
+func (config GetMyDescriptionConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonEmpty("language_code", config.LanguageCode)
+	return params, nil
+}
+
+type SetMyShortDescriptionConfig struct {
+	ShortDescription string
+	LanguageCode     string
+}
+
+func (config SetMyShortDescriptionConfig) method() string {
+	return "setMyShortDescription"
+}
+
+func (config SetMyShortDescriptionConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonEmpty("short_description", config.ShortDescription)
+	params.AddNonEmpty("language_code", config.LanguageCode)
+	return params, nil
+}
+
+type GetMyShortDescriptionConfig struct {
+	LanguageCode string
+}
+
+func (config GetMyShortDescriptionConfig) method() string {
+	return "getMyShortDescription"
+}
+
+func (config GetMyShortDescriptionConfig) params() (Params, error) {
+	params := make(Params)
+	params.AddNonEmpty("language_code", config.LanguageCode)
 	return params, nil
 }
 
@@ -1987,239 +2657,6 @@ func (config SetChatDescriptionConfig) params() (Params, error) {
 	return params, nil
 }
 
-// GetStickerSetConfig allows you to get the stickers in a set.
-type GetStickerSetConfig struct {
-	Name string
-}
-
-func (config GetStickerSetConfig) method() string {
-	return "getStickerSet"
-}
-
-func (config GetStickerSetConfig) params() (Params, error) {
-	params := make(Params)
-
-	params["name"] = config.Name
-
-	return params, nil
-}
-
-// UploadStickerConfig allows you to upload a sticker for use in a set later.
-type UploadStickerConfig struct {
-	UserID     int64
-	PNGSticker RequestFileData
-}
-
-func (config UploadStickerConfig) method() string {
-	return "uploadStickerFile"
-}
-
-func (config UploadStickerConfig) params() (Params, error) {
-	params := make(Params)
-
-	params.AddNonZero64("user_id", config.UserID)
-
-	return params, nil
-}
-
-func (config UploadStickerConfig) files() []RequestFile {
-	return []RequestFile{{
-		Name: "png_sticker",
-		Data: config.PNGSticker,
-	}}
-}
-
-// NewStickerSetConfig allows creating a new sticker set.
-//
-// You must set either PNGSticker or TGSSticker.
-type NewStickerSetConfig struct {
-	UserID        int64
-	Name          string
-	Title         string
-	PNGSticker    RequestFileData
-	TGSSticker    RequestFileData
-	Emojis        string
-	ContainsMasks bool
-	MaskPosition  *MaskPosition
-}
-
-func (config NewStickerSetConfig) method() string {
-	return "createNewStickerSet"
-}
-
-func (config NewStickerSetConfig) params() (Params, error) {
-	params := make(Params)
-
-	params.AddNonZero64("user_id", config.UserID)
-	params["name"] = config.Name
-	params["title"] = config.Title
-
-	params["emojis"] = config.Emojis
-
-	params.AddBool("contains_masks", config.ContainsMasks)
-
-	err := params.AddInterface("mask_position", config.MaskPosition)
-
-	return params, err
-}
-
-func (config NewStickerSetConfig) files() []RequestFile {
-	if config.PNGSticker != nil {
-		return []RequestFile{{
-			Name: "png_sticker",
-			Data: config.PNGSticker,
-		}}
-	}
-
-	return []RequestFile{{
-		Name: "tgs_sticker",
-		Data: config.TGSSticker,
-	}}
-}
-
-// AddStickerConfig allows you to add a sticker to a set.
-type AddStickerConfig struct {
-	UserID       int64
-	Name         string
-	PNGSticker   RequestFileData
-	TGSSticker   RequestFileData
-	Emojis       string
-	MaskPosition *MaskPosition
-}
-
-func (config AddStickerConfig) method() string {
-	return "addStickerToSet"
-}
-
-func (config AddStickerConfig) params() (Params, error) {
-	params := make(Params)
-
-	params.AddNonZero64("user_id", config.UserID)
-	params["name"] = config.Name
-	params["emojis"] = config.Emojis
-
-	err := params.AddInterface("mask_position", config.MaskPosition)
-
-	return params, err
-}
-
-func (config AddStickerConfig) files() []RequestFile {
-	if config.PNGSticker != nil {
-		return []RequestFile{{
-			Name: "png_sticker",
-			Data: config.PNGSticker,
-		}}
-	}
-
-	return []RequestFile{{
-		Name: "tgs_sticker",
-		Data: config.TGSSticker,
-	}}
-
-}
-
-// SetStickerPositionConfig allows you to change the position of a sticker in a set.
-type SetStickerPositionConfig struct {
-	Sticker  string
-	Position int
-}
-
-func (config SetStickerPositionConfig) method() string {
-	return "setStickerPositionInSet"
-}
-
-func (config SetStickerPositionConfig) params() (Params, error) {
-	params := make(Params)
-
-	params["sticker"] = config.Sticker
-	params.AddNonZero("position", config.Position)
-
-	return params, nil
-}
-
-// DeleteStickerConfig allows you to delete a sticker from a set.
-type DeleteStickerConfig struct {
-	Sticker string
-}
-
-func (config DeleteStickerConfig) method() string {
-	return "deleteStickerFromSet"
-}
-
-func (config DeleteStickerConfig) params() (Params, error) {
-	params := make(Params)
-
-	params["sticker"] = config.Sticker
-
-	return params, nil
-}
-
-// SetStickerSetThumbConfig allows you to set the thumbnail for a sticker set.
-type SetStickerSetThumbConfig struct {
-	Name   string
-	UserID int64
-	Thumb  RequestFileData
-}
-
-func (config SetStickerSetThumbConfig) method() string {
-	return "setStickerSetThumb"
-}
-
-func (config SetStickerSetThumbConfig) params() (Params, error) {
-	params := make(Params)
-
-	params["name"] = config.Name
-	params.AddNonZero64("user_id", config.UserID)
-
-	return params, nil
-}
-
-func (config SetStickerSetThumbConfig) files() []RequestFile {
-	return []RequestFile{{
-		Name: "thumb",
-		Data: config.Thumb,
-	}}
-}
-
-// SetChatStickerSetConfig allows you to set the sticker set for a supergroup.
-type SetChatStickerSetConfig struct {
-	ChatID             int64
-	SuperGroupUsername string
-
-	StickerSetName string
-}
-
-func (config SetChatStickerSetConfig) method() string {
-	return "setChatStickerSet"
-}
-
-func (config SetChatStickerSetConfig) params() (Params, error) {
-	params := make(Params)
-
-	params.AddFirstValid("chat_id", config.ChatID, config.SuperGroupUsername)
-	params["sticker_set_name"] = config.StickerSetName
-
-	return params, nil
-}
-
-// DeleteChatStickerSetConfig allows you to remove a supergroup's sticker set.
-type DeleteChatStickerSetConfig struct {
-	ChatID             int64
-	SuperGroupUsername string
-}
-
-func (config DeleteChatStickerSetConfig) method() string {
-	return "deleteChatStickerSet"
-}
-
-func (config DeleteChatStickerSetConfig) params() (Params, error) {
-	params := make(Params)
-
-	params.AddFirstValid("chat_id", config.ChatID, config.SuperGroupUsername)
-
-	return params, nil
-}
-
 // MediaGroupConfig allows you to send a group of media.
 //
 // Media consist of InputMedia items (InputMediaPhoto, InputMediaVideo).
@@ -2227,9 +2664,15 @@ type MediaGroupConfig struct {
 	ChatID          int64
 	ChannelUsername string
 
-	Media               []interface{}
-	DisableNotification bool
-	ReplyToMessageID    int
+	Media                []interface{}
+	DisableNotification  bool
+	ReplyToMessageID     int
+	MessageThreadID      int
+	ProtectContent       bool
+	AllowPaidBroadcast   bool
+	MessageEffectID      string
+	ReplyParameters      *ReplyParameters
+	BusinessConnectionID string
 }
 
 func (config MediaGroupConfig) method() string {
@@ -2242,6 +2685,12 @@ func (config MediaGroupConfig) params() (Params, error) {
 	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
 	params.AddBool("disable_notification", config.DisableNotification)
 	params.AddNonZero("reply_to_message_id", config.ReplyToMessageID)
+	params.AddNonZero("message_thread_id", config.MessageThreadID)
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
+	params.AddBool("protect_content", config.ProtectContent)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 
 	err := params.AddInterface("media", prepareInputMediaForParams(config.Media))
 
@@ -2260,7 +2709,10 @@ type DiceConfig struct {
 	// Dice can have values 1-6 for 🎲, 🎯, and 🎳, values 1-5 for 🏀 and ⚽,
 	// and values 1-64 for 🎰.
 	// Defaults to “🎲”
-	Emoji string
+	AllowPaidBroadcast bool
+	MessageEffectID    string
+	ReplyParameters    *ReplyParameters
+	Emoji              string
 }
 
 func (config DiceConfig) method() string {
@@ -2273,6 +2725,9 @@ func (config DiceConfig) params() (Params, error) {
 		return params, err
 	}
 
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+	params.AddInterface("reply_parameters", config.ReplyParameters)
 	params.AddNonEmpty("emoji", config.Emoji)
 
 	return params, err
@@ -2565,4 +3020,86 @@ func prepareInputMediaForFiles(inputMedia []interface{}) []RequestFile {
 	}
 
 	return files
+}
+
+/*
+Converts a given regular gift to Telegram Stars. Requires the can_convert_gifts_to_stars business bot right. Returns True on success.
+
+Parameter	Type	Required	Description
+business_connection_id	String	Yes	Unique identifier of the business connection
+owned_gift_id	String	Yes	Unique identifier of the regular gift that should be converted to Telegram Stars
+*/
+type ConvertGiftToStarsConfig struct {
+	BusinessConnectionID string
+	OwnedGiftID          string
+}
+
+func (config ConvertGiftToStarsConfig) method() string {
+	return "convertGiftToStars"
+}
+
+func (config ConvertGiftToStarsConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
+	params.AddNonEmpty("owned_gift_id", config.OwnedGiftID)
+	return params, nil
+}
+
+/*
+*
+upgradeGift
+Upgrades a given regular gift to a unique gift. Requires the can_transfer_and_upgrade_gifts business bot right. Additionally requires the can_transfer_stars business bot right if the upgrade is paid. Returns True on success.
+
+Parameter	Type	Required	Description
+business_connection_id	String	Yes	Unique identifier of the business connection
+owned_gift_id	String	Yes	Unique identifier of the regular gift that should be upgraded to a unique one
+keep_original_details	Boolean	Optional	Pass True to keep the original gift text, sender and receiver in the upgraded gift
+star_count	Integer	Optional	The amount of Telegram Stars that will be paid for the upgrade from the business account balance. If gift.prepaid_upgrade_star_count > 0, then pass 0, otherwise, the can_transfer_stars business bot right is required and gift.upgrade_star_count must be passed.
+transferGift
+Transfers an owned unique gift to another user. Requires the can_transfer_and_upgrade_gifts business bot right. Requires can_transfer_stars business bot right if the transfer is paid. Returns True on success.
+
+Parameter	Type	Required	Description
+business_connection_id	String	Yes	Unique identifier of the business connection
+owned_gift_id	String	Yes	Unique identifier of the regular gift that should be transferred
+new_owner_chat_id	Integer	Yes	Unique identifier of the chat which will own the gift. The chat must be active in the last 24 hours.
+star_count	Integer	Optional	The amount of Telegram Stars that will be paid for the transfer from the business account balance. If positive, then the can_transfer_stars business bot right is required.
+*/
+type UpgradeGiftConfig struct {
+	BusinessConnectionID string
+	OwnedGiftID          string
+	KeepOriginalDetails  bool
+	StarCount            int
+}
+
+func (config UpgradeGiftConfig) method() string {
+	return "upgradeGift"
+}
+
+func (config UpgradeGiftConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
+	params.AddNonEmpty("owned_gift_id", config.OwnedGiftID)
+	params.AddBool("keep_original_details", config.KeepOriginalDetails)
+	params.AddNonZero("star_count", config.StarCount)
+	return params, nil
+}
+
+type TransferGiftConfig struct {
+	BusinessConnectionID string
+	OwnedGiftID          string
+	NewOwnerChatID       int64
+	StarCount            int
+}
+
+func (config TransferGiftConfig) method() string {
+	return "transferGift"
+}
+
+func (config TransferGiftConfig) params() (Params, error) {
+	params := Params{}
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
+	params.AddNonEmpty("owned_gift_id", config.OwnedGiftID)
+	params.AddNonZero64("new_owner_chat_id", config.NewOwnerChatID)
+	params.AddNonZero("star_count", config.StarCount)
+	return params, nil
 }

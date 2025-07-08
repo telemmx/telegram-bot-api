@@ -111,6 +111,12 @@ type (
 		// "identity_card" and "internal_passport". The file can be decrypted
 		// and verified using the accompanying EncryptedCredentials.
 		Selfie *PassportFile `json:"selfie,omitempty"`
+
+		//translation
+		Translation []PassportFile `json:"translation,omitempty"`
+		// hash
+		//Base64-encoded element hash for using in PassportElementErrorUnspecified
+		Hash string `json:"hash,omitempty"`
 	}
 
 	// EncryptedCredentials contains data required for decrypting and

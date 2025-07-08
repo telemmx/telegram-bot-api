@@ -307,7 +307,7 @@ var (
 	_ Chattable = EditMessageTextConfig{}
 	_ Chattable = FileConfig{}
 	_ Chattable = ForwardConfig{}
-	_ Chattable = GameConfig{}
+	_ Chattable = SendGameConfig{}
 	_ Chattable = GetChatMemberConfig{}
 	_ Chattable = GetChatMenuButtonConfig{}
 	_ Chattable = GetGameHighScoresConfig{}
@@ -362,12 +362,12 @@ var (
 	_ Fileable = (*SetChatPhotoConfig)(nil)
 	_ Fileable = (*EditMessageMediaConfig)(nil)
 	_ Fileable = (*SetChatPhotoConfig)(nil)
-	_ Fileable = (*UploadStickerConfig)(nil)
-	_ Fileable = (*NewStickerSetConfig)(nil)
-	_ Fileable = (*AddStickerConfig)(nil)
+	_ Fileable = (*UploadStickerFileConfig)(nil)
+	// _ Fileable = (*CreateNewStickerSetConfig)(nil)
+	// _ Fileable = (*AddStickerConfig)(nil)
 	_ Fileable = (*MediaGroupConfig)(nil)
 	_ Fileable = (*WebhookConfig)(nil)
-	_ Fileable = (*SetStickerSetThumbConfig)(nil)
+	// _ Fileable = (*SetStickerSetThumbConfig)(nil)
 )
 
 // Ensure all RequestFileData types are correct.

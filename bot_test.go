@@ -2,17 +2,18 @@ package tgbotapi
 
 import (
 	"net/http"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 )
 
 const (
-	TestToken               = "153667468:AAHlSHlMqSt1f_uFmVRJbm5gntu2HI4WW8I"
-	ChatID                  = 76918703
-	Channel                 = "@tgbotapitest"
-	SupergroupChatID        = -1001120141283
-	ReplyToMessageID        = 35
+	TestToken               = "7888546561:AAFbGm18gvT-6Abv_67JcssqfaFfRzOD5s"
+	ChatID                  = 8167994071
+	Channel                 = "@thisisbiggroup"
+	SupergroupChatID        = -1002809091954
+	ReplyToMessageID        = 1
 	ExistingPhotoFileID     = "AgACAgIAAxkDAAEBFUZhIALQ9pZN4BUe8ZSzUU_2foSo1AACnrMxG0BucEhezsBWOgcikQEAAwIAA20AAyAE"
 	ExistingDocumentFileID  = "BQADAgADOQADjMcoCcioX1GrDvp3Ag"
 	ExistingAudioFileID     = "BQADAgADRgADjMcoCdXg3lSIN49lAg"
@@ -35,7 +36,10 @@ func (t testLogger) Printf(format string, v ...interface{}) {
 }
 
 func getBot(t *testing.T) (*BotAPI, error) {
-	bot, err := NewBotAPI(TestToken)
+
+	proxyURL, _ := url.Parse("http://127.0.0.1:1087")
+	client := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
+	bot, err := NewBotAPIWithClient(TestToken, APIEndpoint, client)
 	bot.Debug = true
 
 	logger := testLogger{t}
@@ -783,6 +787,34 @@ func ExampleWebhookHandler() {
 	})
 
 	go http.ListenAndServeTLS("0.0.0.0:8443", "cert.pem", "key.pem", nil)
+}
+
+func testUpdate(t *testing.T) {
+	bot, _ := getBot(t)
+	u := NewUpdate(0)
+	u.Timeout = 60
+
+	updates := bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		if update.InlineQuery == nil { // if no inline query, ignore it
+			continue
+		}
+
+		article := NewInlineQueryResultArticle(update.InlineQuery.ID, "Echo", update.InlineQuery.Query)
+		article.Description = update.InlineQuery.Query
+
+		inlineConf := InlineConfig{
+			InlineQueryID: update.InlineQuery.ID,
+			IsPersonal:    true,
+			CacheTime:     0,
+			Results:       []interface{}{article},
+		}
+
+		if _, err := bot.Request(inlineConf); err != nil {
+			log.Println(err)
+		}
+	}
 }
 
 func ExampleInlineConfig() {

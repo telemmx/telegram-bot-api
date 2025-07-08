@@ -345,7 +345,15 @@ func (bot *BotAPI) Send(c Chattable) (Message, error) {
 
 	var message Message
 	err = json.Unmarshal(resp.Result, &message)
-
+	var unmarshalTypeError *json.UnmarshalTypeError
+	if errors.As(err, &unmarshalTypeError) {
+		// Telegram sometimes returns a boolean instead of a message
+		var ok bool
+		err = json.Unmarshal(resp.Result, &ok)
+		if err == nil && ok {
+			return Message{}, nil
+		}
+	}
 	return message, err
 }
 

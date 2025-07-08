@@ -1,3 +1,11 @@
+
+# ⚠️ CODE NOT TEST
+# ⚠️ CODE NOT TEST
+# ⚠️ CODE NOT TEST
+
+
+# Please commit your issue, it will be fix or update if confirmed
+
 # Golang bindings for the Telegram Bot API
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/go-telegram-bot-api/telegram-bot-api/v5.svg)](https://pkg.go.dev/github.com/go-telegram-bot-api/telegram-bot-api/v5)
