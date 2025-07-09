@@ -1,8 +1,16 @@
 
-# ⚠️ CODE NOT TEST
-# ⚠️ CODE NOT TEST
-# ⚠️ CODE NOT TEST
+# ⚠️ The code is not fully tested ⚠️
 
+# upgraded 7.x -> 9.1.0 lateast
+
+## USAGES
+
+First, ensure the library is installed and up to date by running
+`go get -u github.com/telemmx/telegram-bot-api/v9@9.1.0`.
+
+
+=========================================
+OLD README
 
 # Please commit your issue, it will be fix or update if confirmed
 
